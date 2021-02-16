@@ -49,6 +49,8 @@ cmake_install.cmake
 Makefile
 CMakeFiles
 install_manifest.txt
+*.user
+*.txt.user
 
 # test/testresults test log files
 testresults
@@ -85,4 +87,5 @@ compile_commands.json
 # ignore tags
 cscope.out
 tags
+
 

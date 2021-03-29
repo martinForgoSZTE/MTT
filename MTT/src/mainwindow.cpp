@@ -1,43 +1,39 @@
 #include "mainwindow.h"
+#include "mapwidget.h"
+#include "table_editor_widget.h"
 
 #include <QtWidgets>
 #include <QImage>
 #include <QPixmap>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QStackedWidget>
+#include <QVBoxLayout>
 
 
-MainWindow::MainWindow() noexcept
-    : m_pImage(new QImage), m_pScene(new QGraphicsScene())
+MainWindow::MainWindow(DB_Manager& db_manager) noexcept
+    : m_dbMan(db_manager), m_pMapWidget(new MapWidget(this)), m_pEditor(nullptr)
 {
-    m_pImage->load(":/images/hungary.jpg");
-    m_pScene->addPixmap(QPixmap::fromImage(*m_pImage));
-    m_pScene->setSceneRect(m_pImage->rect());
-
-    QGraphicsView* view = new QGraphicsView(this);
-    view->setScene(m_pScene);
-
-    setCentralWidget(view);
+    setCentralWidget(m_pMapWidget->GetGraphicsView());
 
     createActions();
     createStatusBar();
 }
 
+void MainWindow::open()
+{
+    QString fileName = QFileDialog::getOpenFileName(this);
+    if(fileName != "")
+        m_dbMan.CreateCustomDB("QSQLITE", fileName);
+    m_pEditor = new TableEditor("Test_Data", this);
+    setCentralWidget(m_pEditor->GetTableView());
+}
 
 /*void MainWindow::newFile()
 {
     if (maybeSave()) {
         textEdit->clear();
         setCurrentFile(QString());
-    }
-}
-
-void MainWindow::open()
-{
-    if (maybeSave()) {
-        QString fileName = QFileDialog::getOpenFileName(this);
-        if (!fileName.isEmpty())
-            loadFile(fileName);
     }
 }
 
@@ -71,7 +67,7 @@ void MainWindow::createActions()
     QAction *openAct = new QAction(openIcon, tr("&Open..."), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open an existing file"));
-    //connect(openAct, &QAction::triggered, this, &MainWindow::open);
+    connect(openAct, &QAction::triggered, this, &MainWindow::open);
     fileMenu->addAction(openAct);
     fileToolBar->addAction(openAct);
 
@@ -89,6 +85,31 @@ void MainWindow::createActions()
     QAction *exitAct = fileMenu->addAction(exitIcon, tr("E&xit"), this, &QWidget::close);
     exitAct->setShortcuts(QKeySequence::Quit);
     exitAct->setStatusTip(tr("Exit the application"));
+
+
+    QMenu *stagesMenu = menuBar()->addMenu(tr("&Views"));
+
+    const QIcon mapIcon = QIcon::fromTheme("map");
+    QAction *switchToMapAct = new QAction(mapIcon, tr("&Map view"), this);
+    switchToMapAct->setStatusTip(tr("Open Map View"));
+    //connect(switchToMapAct, &QAction::triggered, this, /*&MainWindow::open*/);
+    stagesMenu->addAction(switchToMapAct);
+
+    stagesMenu->addSeparator();
+
+    const QIcon tableIcon = QIcon::fromTheme("table");
+    QAction *switchToTableAct = new QAction(tableIcon, tr("&Table view"), this);
+    switchToTableAct->setStatusTip(tr("Open selected database table"));
+    //connect(switchToTableAct, &QAction::triggered, this, /*&MainWindow::open*/);
+    stagesMenu->addAction(switchToTableAct);
+
+    stagesMenu->addSeparator();
+
+    const QIcon chartsIcon = QIcon::fromTheme("chart");
+    QAction *switchToChartsAct = new QAction(chartsIcon, tr("&Charts View"), this);
+    switchToChartsAct->setStatusTip(tr("Open Charts view"));
+    //connect(switchToChartsAct, &QAction::triggered, this, /*&MainWindow::open*/);
+    stagesMenu->addAction(switchToChartsAct);
 
     /*QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     QAction *aboutAct = helpMenu->addAction(tr("&About"), this, &MainWindow::about);

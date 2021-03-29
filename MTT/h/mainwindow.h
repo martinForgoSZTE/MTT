@@ -2,19 +2,21 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "db_manager.h"
 
 class QAction;
 class QMenu;
-class QImage;
-class QGraphicsScene;
+class QStackedWidget;
 
+class MapWidget;
+class TableEditor;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow() noexcept;
+    explicit MainWindow(DB_Manager&) noexcept;
     MainWindow(const MainWindow&) = delete;
     MainWindow& operator=(const MainWindow&) = delete;
     MainWindow(MainWindow&&) = delete;
@@ -27,13 +29,9 @@ protected:
 
 private slots:
     void newFile();
-    void open();
-    bool save();
     void about();
 
 private:
-    void createActions();
-    void createStatusBar();
     void readSettings();
     void writeSettings();
     bool maybeSave();
@@ -41,13 +39,18 @@ private:
     void setCurrentFile(const QString &fileName);
     QString strippedName(const QString &fullFileName);*/
 
+private slots:
+    void open();
+    //bool save();
+
 private:
     void createActions();
     void createStatusBar();
 
-    QImage *m_pImage;
-    QGraphicsScene* m_pScene;
     QString m_curFile;
+    DB_Manager& m_dbMan;
+    MapWidget* m_pMapWidget;
+    TableEditor* m_pEditor;
 };
 
 #endif

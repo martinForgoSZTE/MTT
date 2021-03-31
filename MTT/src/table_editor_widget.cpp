@@ -7,21 +7,22 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QSqlRecord>
+#include <QSqlError>
+#include <QSqlDatabase>
+#include <QComboBox>
 
 
-TableEditor::TableEditor(const QString &tableName, QWidget *parent)
+TableEditor::TableEditor(QSqlDatabase& db, const QString &tableName, QWidget *parent)
     : QWidget(parent)
 {
-    model = new QSqlTableModel(this);
+    model = new QSqlTableModel(this, db);
     model->setTable(tableName);
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     model->select();
 
-    auto x = model->record(1).value("area_name").toString();
-
-    /*model->setHeaderData(0, Qt::Horizontal, tr("ID"));
-    model->setHeaderData(1, Qt::Horizontal, tr("First name"));
-    model->setHeaderData(2, Qt::Horizontal, tr("Last name"));*/
+    //model->setHeaderData(0, Qt::Horizontal, tr("ID"));
+    //model->setHeaderData(1, Qt::Horizontal, tr("First name"));
+    //model->setHeaderData(2, Qt::Horizontal, tr("Last name"));
 
     view = new QTableView;
     view->setModel(model);
@@ -41,7 +42,13 @@ TableEditor::TableEditor(const QString &tableName, QWidget *parent)
     connect(revertButton, &QPushButton::clicked,  model, &QSqlTableModel::revertAll);
     connect(quitButton, &QPushButton::clicked, this, &TableEditor::close);
 
-    setWindowTitle(tr("Database Cached Table"));
+    QHBoxLayout *mainLayout = new QHBoxLayout;
+    mainLayout->addWidget(view);
+    mainLayout->addWidget(buttonBox);
+    mainLayout->addWidget(combo);
+    setLayout(mainLayout);
+
+    //setWindowTitle(tr("Database Cached Table"));
 }
 
 void TableEditor::submit()
@@ -52,8 +59,16 @@ void TableEditor::submit()
     } else {
         model->database().rollback();
         QMessageBox::warning(this, tr("Cached Table"),
-                             tr("The database reported an error"));
+                             tr("The database reported an error: %1")
+                             .arg(model->lastError().text()));
     }
+}
+
+void TableEditor::SetComboBox(const QString &tableName)
+{
+    combo = new QComboBox;
+    combo->addItems({tableName + "_Data", tableName + "_Meta"});
+    this->layout()->addWidget(combo);
 }
 
 

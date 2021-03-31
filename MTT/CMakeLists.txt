@@ -15,6 +15,7 @@ set(MTT_HEADERS
 "h/county_seat.h"
 "h/region.h"
 "h/large_region.h"
+"h/db_modal_dialog.h"
 )
 
 set(MTT_SOURCES
@@ -23,6 +24,7 @@ set(MTT_SOURCES
 "src/file_manager.cpp"
 "src/mapwidget.cpp"
 "src/table_editor_widget.cpp"
+"src/db_modal_dialog.cpp"
 "src/MTT.cpp"
 )
 

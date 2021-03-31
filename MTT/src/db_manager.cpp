@@ -11,7 +11,7 @@
 #include <QVector>
 #include <tuple>
 #include <type_traits>
-
+#include <QSet>
 
 static const QString COMMON_DB_PATH = "../MTT/db/common.db";
 static const QString STORE_DB_PATH = "../MTT/db/store.db";
@@ -222,12 +222,12 @@ DB_Manager::DB_Manager(const QString& driver)
 
 
 
-    void DB_Manager::CreateCustomDB(const QString& driver, const QString& filename, const QString& tableName)
+    void DB_Manager::CreateCustomDB(const QString& filename, const QString& tableName)
     {
-        if(!m_StoreDB.isValid()) //TODO new db-t a meglévő helyére
+        if(!m_StoreDB.isValid())
         {
-            m_StoreDB = QSqlDatabase::addDatabase(driver, "StoreConn");
-            m_StoreDB.setDatabaseName(":memory:");
+        m_StoreDB = QSqlDatabase::addDatabase("QSQLITE", "szConnName");
+        m_StoreDB.setDatabaseName(":memory:");
         }
         if(!m_StoreDB.isOpen())
         {
@@ -247,7 +247,7 @@ DB_Manager::DB_Manager(const QString& driver)
             Record_Wrapper wrapper = man.parse(filename);
 
             QSqlQuery query(m_StoreDB);
-            auto i = query.exec("create table if not exists " + tableNameData + "(area_name varchar(100), year varchar(10), data varchar(20))");
+            query.exec("create table if not exists " + tableNameData + "(area_name varchar(100), year varchar(10), data varchar(20))");
             query.exec("create table if not exists " + tableNameMeta + "(area_name varchar(100), capital integer, county integer, region integer, large_region integer)");
             for(auto* record : wrapper.records)
             {
@@ -263,8 +263,61 @@ DB_Manager::DB_Manager(const QString& driver)
                 }
                 for(auto* entry : record->entries)
                 {
-                    auto  x =query.exec("insert into " + tableNameData + " values('" + entry->area_name + "', '" + entry->year + "', '" + entry->data + "')");
+                    query.exec("insert into " + tableNameData + " values('" + entry->area_name + "', '" + entry->year + "', '" + entry->data + "')");
                 }
             }
         }
     }
+
+ bool DB_Manager::RemoveConn(const QString& szConn)
+ {
+    if(m_StoreDB.isValid())
+    {
+        if(m_StoreDB.contains(szConn))
+        {
+            m_StoreDB.removeDatabase(szConn);
+        }
+        return true;
+    }
+    return false;
+ }
+
+ bool DB_Manager::RemoveConns()
+ {
+     if(m_StoreDB.isValid())
+     {
+        QStringList connNames = m_StoreDB.connectionNames();
+        for(auto& conn : connNames)
+        {
+            m_StoreDB.removeDatabase(conn);
+        }
+        return true;
+     }
+     return false;
+ }
+
+ void DB_Manager::SetStoreDB(const QString& szPath, const QString& szConnName, const QString& szDriver)
+ {
+     RemoveConns();
+     m_StoreDB = QSqlDatabase::addDatabase(szDriver, szConnName);
+     m_StoreDB.setDatabaseName(szPath);
+ }
+
+ QSqlDatabase& DB_Manager::GetStoreDB()
+ {
+    return m_StoreDB;
+ }
+
+ QSet<QString> DB_Manager::GetTables() const
+ {
+     QSet<QString> rSet;
+
+     QSqlQuery query(m_StoreDB);
+     query.exec("SELECT name FROM sqlite_master WHERE type='table'");
+     while(query.next())
+     {
+         rSet.insert(query.value(0).toString().split("_")[0]);
+     }
+
+     return rSet;
+ }

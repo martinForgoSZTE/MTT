@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "mapwidget.h"
 #include "table_editor_widget.h"
+#include "db_modal_dialog.h"
 
 #include <QtWidgets>
 #include <QImage>
@@ -9,6 +10,7 @@
 #include <QGraphicsView>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+#include <QStringList>
 
 
 MainWindow::MainWindow(DB_Manager& db_manager) noexcept
@@ -20,13 +22,26 @@ MainWindow::MainWindow(DB_Manager& db_manager) noexcept
     createStatusBar();
 }
 
-void MainWindow::open()
+void MainWindow::FileOpen()
 {
     QString fileName = QFileDialog::getOpenFileName(this);
     if(fileName != "")
-        m_dbMan.CreateCustomDB("QSQLITE", fileName);
-    m_pEditor = new TableEditor("Test_Data", this);
-    setCentralWidget(m_pEditor->GetTableView());
+        m_dbMan.CreateCustomDB(fileName);
+    m_pEditor = new TableEditor(m_dbMan.GetStoreDB() ,"Test_Data", this);
+    setCentralWidget(m_pEditor);
+}
+
+void MainWindow::DBOpen()
+{
+    auto tablesSet = m_dbMan.GetTables();
+    QStringList tables(tablesSet.begin(), tablesSet.end());
+
+    DBModal* modal = new DBModal(tables);
+    if(modal->exec() && m_pEditor)
+    {
+        m_pEditor->SetComboBox(modal->GetSelectedTable());
+        setCentralWidget(m_pEditor);
+    }
 }
 
 /*void MainWindow::newFile()
@@ -62,14 +77,25 @@ void MainWindow::createActions()
 
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
     QToolBar *fileToolBar = addToolBar(tr("File"));
+    QMenu* subOpenMenu = fileMenu->addMenu(tr("&Open"));
+    QMenu *stagesMenu = menuBar()->addMenu(tr("&Views"));
 
     const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
-    QAction *openAct = new QAction(openIcon, tr("&Open..."), this);
-    openAct->setShortcuts(QKeySequence::Open);
-    openAct->setStatusTip(tr("Open an existing file"));
-    connect(openAct, &QAction::triggered, this, &MainWindow::open);
-    fileMenu->addAction(openAct);
-    fileToolBar->addAction(openAct);
+
+    subOpenMenu->setIcon(openIcon);
+
+    QAction *fileOpenAct = new QAction(openIcon, tr("&Open file..."), this);
+    fileOpenAct->setShortcuts(QKeySequence::Open);
+    fileOpenAct->setStatusTip(tr("Open a STAT file"));
+    connect(fileOpenAct, &QAction::triggered, this, &MainWindow::FileOpen);
+    subOpenMenu->addAction(fileOpenAct);
+    fileToolBar->addAction(fileOpenAct);
+
+    QAction *dbOpenAct = new QAction(openIcon, tr("&Open database..."), this);
+    dbOpenAct->setShortcuts(QKeySequence::Open);
+    dbOpenAct->setStatusTip(tr("Open a STAT file"));
+    connect(dbOpenAct, &QAction::triggered, this, &MainWindow::DBOpen);
+    subOpenMenu->addAction(dbOpenAct);
 
     const QIcon saveIcon = QIcon::fromTheme("document-save", QIcon(":/images/save.png"));
     QAction *saveAct = new QAction(saveIcon, tr("&Save"), this);
@@ -85,9 +111,6 @@ void MainWindow::createActions()
     QAction *exitAct = fileMenu->addAction(exitIcon, tr("E&xit"), this, &QWidget::close);
     exitAct->setShortcuts(QKeySequence::Quit);
     exitAct->setStatusTip(tr("Exit the application"));
-
-
-    QMenu *stagesMenu = menuBar()->addMenu(tr("&Views"));
 
     const QIcon mapIcon = QIcon::fromTheme("map");
     QAction *switchToMapAct = new QAction(mapIcon, tr("&Map view"), this);
@@ -111,6 +134,8 @@ void MainWindow::createActions()
     //connect(switchToChartsAct, &QAction::triggered, this, /*&MainWindow::open*/);
     stagesMenu->addAction(switchToChartsAct);
 
+
+
     /*QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     QAction *aboutAct = helpMenu->addAction(tr("&About"), this, &MainWindow::about);
     aboutAct->setStatusTip(tr("Show the application's About box"));
@@ -120,6 +145,11 @@ void MainWindow::createActions()
     aboutQtAct->setStatusTip(tr("Show the Qt library's About box"));*/
 
 
+}
+
+MainWindow::~MainWindow()
+{
+    //TODO disconnects, connecting obj into data members
 }
 
 void MainWindow::createStatusBar()

@@ -2,11 +2,14 @@
 #define TABLE_EDITOR_WIDGET_H
 
 #include <QWidget>
+#include <QStringList>
 
 class QPushButton;
 class QDialogButtonBox;
 class QSqlTableModel;
 class QTableView;
+class QSqlDatabase;
+class QComboBox;
 
 
 class TableEditor : public QWidget
@@ -14,7 +17,8 @@ class TableEditor : public QWidget
     Q_OBJECT
 
 public:
-    explicit TableEditor(const QString &tableName, QWidget *parent = nullptr);
+    explicit TableEditor(QSqlDatabase& db,const QString &tableName, QWidget *parent = nullptr);
+    void SetComboBox(const QString &tableName);
 
     QTableView* GetTableView() const
     {
@@ -31,6 +35,8 @@ private:
     QDialogButtonBox *buttonBox;
     QSqlTableModel *model;
     QTableView* view;
+    QComboBox* combo;
+    QStringList tables;
 };
 
 

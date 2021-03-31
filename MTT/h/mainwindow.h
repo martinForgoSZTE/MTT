@@ -17,6 +17,8 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(DB_Manager&) noexcept;
+    ~MainWindow();
+
     MainWindow(const MainWindow&) = delete;
     MainWindow& operator=(const MainWindow&) = delete;
     MainWindow(MainWindow&&) = delete;
@@ -40,7 +42,8 @@ private:
     QString strippedName(const QString &fullFileName);*/
 
 private slots:
-    void open();
+    void FileOpen();
+    void DBOpen();
     //bool save();
 
 private:

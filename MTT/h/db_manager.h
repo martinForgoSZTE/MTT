@@ -5,6 +5,11 @@
 #include <QString>
 #include <QVariant>
 #include <tuple>
+#include <QStringList>
+
+
+inline const QString CONN_NAME = "StoreConn";
+
 
 class QSqlQuery;
 
@@ -26,8 +31,13 @@ public:
         std::tuple<QVariant> values;
     };
 
-    void CreateCustomDB(const QString& driver, const QString& filename, const QString& tableName = "Test");
+    void CreateCustomDB(const QString& filename, const QString& tableName = "Test");
     void CreateCustomDB(const DB_Blob);
+    QSet<QString> GetTables() const;
+    bool RemoveConn(const QString& szConn);
+    bool RemoveConns();
+    void SetStoreDB(const QString& szPath = ":memory:", const QString& szConnName = CONN_NAME, const QString& szDriver = "QSQLITE");
+    QSqlDatabase& GetStoreDB();
 
 private:
     void CreateCountiesIfNotExists(const QString&);
@@ -37,8 +47,8 @@ private:
     bool CheckIfTableExists(QSqlDatabase&, const QString& tableName);
     int GetSizeOfResultSet(QSqlDatabase&, QSqlQuery&);
 
-    QSqlDatabase m_StoreDB;
     QSqlDatabase m_CommonDB;
+    QSqlDatabase m_StoreDB;
 };
 
 

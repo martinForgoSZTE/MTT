@@ -31,8 +31,7 @@ public:
         std::tuple<QVariant> values;
     };
 
-    void CreateCustomDB(const QString& filename, const QString& tableName = "Test");
-    void CreateCustomDB(const DB_Blob);
+    QString CreateCustomDB(const QString& filename);
     QSet<QString> GetTables() const;
     bool RemoveConn(const QString& szConn);
     bool RemoveConns();

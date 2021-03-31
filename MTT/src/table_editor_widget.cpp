@@ -18,7 +18,7 @@ TableEditor::TableEditor(QSqlDatabase& db, const QString &tableName, QWidget *pa
     model = new QSqlTableModel(this, db);
     model->setTable(tableName);
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    model->select();
+    auto x = model->select();
 
     //model->setHeaderData(0, Qt::Horizontal, tr("ID"));
     //model->setHeaderData(1, Qt::Horizontal, tr("First name"));
@@ -42,13 +42,12 @@ TableEditor::TableEditor(QSqlDatabase& db, const QString &tableName, QWidget *pa
     connect(revertButton, &QPushButton::clicked,  model, &QSqlTableModel::revertAll);
     connect(quitButton, &QPushButton::clicked, this, &TableEditor::close);
 
-    QHBoxLayout *mainLayout = new QHBoxLayout;
+    QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->addWidget(view);
     mainLayout->addWidget(buttonBox);
-    mainLayout->addWidget(combo);
     setLayout(mainLayout);
 
-    //setWindowTitle(tr("Database Cached Table"));
+    setWindowTitle(tr("Database Cached Table"));
 }
 
 void TableEditor::submit()

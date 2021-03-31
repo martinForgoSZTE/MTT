@@ -51,14 +51,12 @@ DB_Manager::DB_Manager(const QString& driver)
     }
     else
     {
-        try {
+
             CreateCountiesIfNotExists(driver);
             CreateCountySeatsIfNotExists(driver);
             CreateRegionsIfNotExists(driver);
             CreateLRegionsIfNotExists(driver);
-        } catch (...) {
 
-        }
         if(m_CommonDB.isValid() && m_CommonDB.isOpen())
             m_CommonDB.close();
     }
@@ -222,51 +220,51 @@ DB_Manager::DB_Manager(const QString& driver)
 
 
 
-    void DB_Manager::CreateCustomDB(const QString& filename, const QString& tableName)
+    QString DB_Manager::CreateCustomDB(const QString& filename)
     {
-        if(!m_StoreDB.isValid())
-        {
-        m_StoreDB = QSqlDatabase::addDatabase("QSQLITE", "szConnName");
-        m_StoreDB.setDatabaseName(":memory:");
-        }
+        QString tableName;
+        SetStoreDB();
         if(!m_StoreDB.isOpen())
         {
             if(!m_StoreDB.open())
             {
                 QString e = m_StoreDB.lastError().driverText();
                 qDebug(e.toUtf8());
-                return;
+                return tableName;
             }
         }
 
-        QString tableNameData = tableName + "_Data";
-        QString tableNameMeta = tableName + "_Meta";
-        if(!CheckIfTableExists(m_StoreDB, tableNameData) && !CheckIfTableExists(m_StoreDB, tableNameMeta))
-        {
             File_Manager man;
             Record_Wrapper wrapper = man.parse(filename);
-
-            QSqlQuery query(m_StoreDB);
-            query.exec("create table if not exists " + tableNameData + "(area_name varchar(100), year varchar(10), data varchar(20))");
-            query.exec("create table if not exists " + tableNameMeta + "(area_name varchar(100), capital integer, county integer, region integer, large_region integer)");
-            for(auto* record : wrapper.records)
+            tableName = wrapper.tableName;
+            QString tableNameData = tableName + "_Data";
+            QString tableNameMeta = tableName + "_Meta";
+            if(!CheckIfTableExists(m_StoreDB, tableNameData) && !CheckIfTableExists(m_StoreDB, tableNameMeta))
             {
-                if(record->entries.size())
+
+                QSqlQuery query(m_StoreDB);
+                auto x = query.exec("create table if not exists " + tableNameData + "(area_name varchar(100), year varchar(10), data varchar(20))");
+                auto y = query.exec("create table if not exists " + tableNameMeta + "(area_name varchar(100), capital integer, county integer, region integer, large_region integer)");
+                for(auto* record : wrapper.records)
                 {
-                    query.prepare("insert into " + tableNameMeta + " values(?,?,?,?,?)");
-                    query.addBindValue(record->entries[0]->area_name);
-                    query.addBindValue(record->info.capital);
-                    query.addBindValue(record->info.county);
-                    query.addBindValue(record->info.region);
-                    query.addBindValue(record->info.large_region);
-                    query.exec();
-                }
-                for(auto* entry : record->entries)
-                {
-                    query.exec("insert into " + tableNameData + " values('" + entry->area_name + "', '" + entry->year + "', '" + entry->data + "')");
+                    if(record->entries.size())
+                    {
+                        query.prepare("insert into " + tableNameMeta + " values(?,?,?,?,?)");
+                        query.addBindValue(record->entries[0]->area_name);
+                        query.addBindValue(record->info.capital);
+                        query.addBindValue(record->info.county);
+                        query.addBindValue(record->info.region);
+                        query.addBindValue(record->info.large_region);
+                        query.exec();
+                    }
+                    for(auto* entry : record->entries)
+                    {
+                        auto i = query.exec("insert into " + tableNameData + " values('" + entry->area_name + "', '" + entry->year + "', '" + entry->data + "')");
+                        int asd = 1;
+                    }
                 }
             }
-        }
+            return tableName;
     }
 
  bool DB_Manager::RemoveConn(const QString& szConn)

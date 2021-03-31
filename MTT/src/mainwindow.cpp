@@ -25,10 +25,13 @@ MainWindow::MainWindow(DB_Manager& db_manager) noexcept
 void MainWindow::FileOpen()
 {
     QString fileName = QFileDialog::getOpenFileName(this);
+    QString tablename;
     if(fileName != "")
-        m_dbMan.CreateCustomDB(fileName);
-    m_pEditor = new TableEditor(m_dbMan.GetStoreDB() ,"Test_Data", this);
-    setCentralWidget(m_pEditor);
+    {
+        tablename = m_dbMan.CreateCustomDB(fileName);
+        m_pEditor = new TableEditor(m_dbMan.GetStoreDB() , tablename + "_Data", this);
+        setCentralWidget(m_pEditor);
+    }
 }
 
 void MainWindow::DBOpen()

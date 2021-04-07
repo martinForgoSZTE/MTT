@@ -10,6 +10,8 @@ class QSqlTableModel;
 class QTableView;
 class QSqlDatabase;
 class QComboBox;
+class MainWindow;
+class QHBoxLayout;
 
 
 class TableEditor : public QWidget
@@ -17,19 +19,22 @@ class TableEditor : public QWidget
     Q_OBJECT
 
 public:
-    explicit TableEditor(QSqlDatabase& db,const QString &tableName, QWidget *parent = nullptr);
+    explicit TableEditor(QWidget *parent = nullptr);
     void SetComboBox(const QString &tableName);
-
-    QTableView* GetTableView() const
-    {
-        return view;
-    }
+    void RemoveComboBox();
+    void SetModelView(QSqlDatabase& db,const QString &tableName);
+    void SetCustomLayout();
 
 private slots:
-    void submit();
+    void onSaveToDB();
+    void onSerializeToDB();
+
+public slots:
+    void onCurrentTextChanged(const QString& table);
 
 private:
-    QPushButton *submitButton;
+    QPushButton *saveDBButton;
+    QPushButton *serializeToDBButton;
     QPushButton *revertButton;
     QPushButton *quitButton;
     QDialogButtonBox *buttonBox;
@@ -37,17 +42,9 @@ private:
     QTableView* view;
     QComboBox* combo;
     QStringList tables;
+    QHBoxLayout *mainLayout;
+
+    MainWindow* parent;
 };
-
-
-
-
-
-
-
-
-
-
-
 
 #endif

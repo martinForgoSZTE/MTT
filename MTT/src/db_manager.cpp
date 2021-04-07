@@ -13,8 +13,10 @@
 #include <type_traits>
 #include <QSet>
 
-static const QString COMMON_DB_PATH = "../MTT/db/common.db";
-static const QString STORE_DB_PATH = "../MTT/db/store.db";
+static const QString COMMON_DB_PATH = QDir::toNativeSeparators("./common.db");
+static const QString STORE_DB_PATH = QDir::toNativeSeparators("./store.db");
+static const QString STORE_DB_PREFIX = "store";
+inline const QString CONN_NAME = "StoreConn";
 
 //TODO iterating through a tuple's elements -> 1 method instead of 3
 // void CreateTableIfNotExists(const QString& driver, const QString& connName, const QString& tableName, const QString& dbPath, const QString&, ...); params into a blob obj
@@ -45,17 +47,23 @@ constexpr decltype(auto) for_each(Tuple&& tuple, F&& f)
 
 DB_Manager::DB_Manager(const QString& driver)
 {
+    storeIsInMemory = true;
     if(!QSqlDatabase::isDriverAvailable(driver))
     {
         qDebug("ERROR: driver is not available...");
     }
     else
     {
-
-            CreateCountiesIfNotExists(driver);
-            CreateCountySeatsIfNotExists(driver);
-            CreateRegionsIfNotExists(driver);
-            CreateLRegionsIfNotExists(driver);
+        if(!QFile::exists(STORE_DB_PATH))
+        {
+            QFile file(STORE_DB_PATH);
+            file.open(QIODevice::ReadWrite);
+            file.close();
+        }
+        CreateCountiesIfNotExists(driver);
+        CreateCountySeatsIfNotExists(driver);
+        CreateRegionsIfNotExists(driver);
+        CreateLRegionsIfNotExists(driver);
 
         if(m_CommonDB.isValid() && m_CommonDB.isOpen())
             m_CommonDB.close();
@@ -223,7 +231,6 @@ DB_Manager::DB_Manager(const QString& driver)
     QString DB_Manager::CreateCustomDB(const QString& filename)
     {
         QString tableName;
-        SetStoreDB();
         if(!m_StoreDB.isOpen())
         {
             if(!m_StoreDB.open())
@@ -243,8 +250,8 @@ DB_Manager::DB_Manager(const QString& driver)
             {
 
                 QSqlQuery query(m_StoreDB);
-                auto x = query.exec("create table if not exists " + tableNameData + "(area_name varchar(100), year varchar(10), data varchar(20))");
-                auto y = query.exec("create table if not exists " + tableNameMeta + "(area_name varchar(100), capital integer, county integer, region integer, large_region integer)");
+                query.exec("create table if not exists " + tableNameData + "(area_name varchar(100), year varchar(10), data varchar(20))");
+                query.exec("create table if not exists " + tableNameMeta + "(area_name varchar(100), capital integer, county integer, region integer, large_region integer)");
                 for(auto* record : wrapper.records)
                 {
                     if(record->entries.size())
@@ -259,46 +266,35 @@ DB_Manager::DB_Manager(const QString& driver)
                     }
                     for(auto* entry : record->entries)
                     {
-                        auto i = query.exec("insert into " + tableNameData + " values('" + entry->area_name + "', '" + entry->year + "', '" + entry->data + "')");
-                        int asd = 1;
+                        query.exec("insert into " + tableNameData + " values('" + entry->area_name + "', '" + entry->year + "', '" + entry->data + "')");
                     }
                 }
             }
             return tableName;
     }
 
- bool DB_Manager::RemoveConn(const QString& szConn)
+ void DB_Manager::SetStoreDB(const QString& szPath, const QString& szDriver)
  {
-    if(m_StoreDB.isValid())
-    {
-        if(m_StoreDB.contains(szConn))
-        {
-            m_StoreDB.removeDatabase(szConn);
-        }
-        return true;
-    }
-    return false;
- }
+     if(szPath != ":memory:")
+        storeIsInMemory = false;
+     else
+         storeIsInMemory = true;
 
- bool DB_Manager::RemoveConns()
- {
-     if(m_StoreDB.isValid())
+     if(m_StoreDB.isValid() && m_StoreDB.isOpen())
      {
-        QStringList connNames = m_StoreDB.connectionNames();
-        for(auto& conn : connNames)
-        {
-            m_StoreDB.removeDatabase(conn);
-        }
-        return true;
+        m_StoreDB.close();
      }
-     return false;
- }
 
- void DB_Manager::SetStoreDB(const QString& szPath, const QString& szConnName, const QString& szDriver)
- {
-     RemoveConns();
-     m_StoreDB = QSqlDatabase::addDatabase(szDriver, szConnName);
+     if(QSqlDatabase::connectionNames().contains(CONN_NAME))
+         QSqlDatabase::removeDatabase(CONN_NAME);
+
+     m_StoreDB = QSqlDatabase::addDatabase(szDriver, CONN_NAME);
      m_StoreDB.setDatabaseName(szPath);
+     if(!m_StoreDB.open())
+     {
+         QString e = m_StoreDB.lastError().driverText();
+         qDebug(e.toUtf8());
+     }
  }
 
  QSqlDatabase& DB_Manager::GetStoreDB()
@@ -310,12 +306,65 @@ DB_Manager::DB_Manager(const QString& driver)
  {
      QSet<QString> rSet;
 
-     QSqlQuery query(m_StoreDB);
-     query.exec("SELECT name FROM sqlite_master WHERE type='table'");
+     QSqlQuery query = m_StoreDB.exec("SELECT name FROM sqlite_master WHERE type='table'");
+     if(query.lastError().text() != "")
+     {
+        qDebug() << query.lastError().text();
+     }
+
      while(query.next())
      {
          rSet.insert(query.value(0).toString().split("_")[0]);
      }
 
      return rSet;
+ }
+
+ QList<QString> DB_Manager::GetRealTables() const
+ {
+     QList<QString> rList;
+
+     QSqlQuery query(m_StoreDB);
+     query.exec("SELECT name FROM sqlite_master WHERE type='table'");
+     while(query.next())
+     {
+         rList.append(query.value(0).toString());
+     }
+
+     return rList;
+ }
+
+ // only in memory tables are serialized
+ bool DB_Manager::SerializeDB()
+ {
+     //TODO enum
+     bool rbSucc = true;
+     if(storeIsInMemory)
+     {
+         QString sqlAttach = QString("ATTACH DATABASE '%1' AS " + STORE_DB_PREFIX).arg(QDir::toNativeSeparators(STORE_DB_PATH));
+         QSqlQuery q_attach = m_StoreDB.exec(sqlAttach);
+
+         auto tables = GetRealTables();
+         for(auto& table : tables)
+         {
+            if(CheckIfTableExists(m_StoreDB, STORE_DB_PREFIX + "." + table))
+            {
+                rbSucc = false;
+                break;
+            }
+            QSqlQuery q_create_fdb(m_StoreDB);
+            auto bSucc = q_create_fdb.exec("CREATE TABLE if not exists store." + table + " AS SELECT * from " + table );
+            qDebug() << "Creating " + table + " in " + STORE_DB_PATH + ": " << q_create_fdb.lastError();
+            if(!bSucc)
+            {
+                rbSucc = false;
+            }
+         }
+     }
+     else
+     {
+         rbSucc = false;
+     }
+     SetStoreDB(STORE_DB_PATH);
+     return rbSucc;
  }

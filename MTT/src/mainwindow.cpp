@@ -11,6 +11,7 @@
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QStringList>
+#include <QMessageBox>
 
 
 MainWindow::MainWindow(DB_Manager& db_manager) noexcept
@@ -28,21 +29,37 @@ void MainWindow::FileOpen()
     QString tablename;
     if(fileName != "")
     {
+        m_dbMan.SetStoreDB();
+
         tablename = m_dbMan.CreateCustomDB(fileName);
-        m_pEditor = new TableEditor(m_dbMan.GetStoreDB() , tablename + "_Data", this);
+        if(!m_pEditor)
+            m_pEditor = new TableEditor( this);
+        else
+            m_pEditor->RemoveComboBox();
+
+        m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tablename + "_Data");
+        m_pEditor->SetCustomLayout();
+
         setCentralWidget(m_pEditor);
     }
 }
 
 void MainWindow::DBOpen()
 {
+    m_dbMan.SetStoreDB("./store.db");
+
     auto tablesSet = m_dbMan.GetTables();
     QStringList tables(tablesSet.begin(), tablesSet.end());
 
     DBModal* modal = new DBModal(tables);
-    if(modal->exec() && m_pEditor)
+    if(modal->exec())
     {
+        if(!m_pEditor)
+            m_pEditor = new TableEditor( this);
+        m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tables[0] + "_Data");
+        m_pEditor->SetCustomLayout();
         m_pEditor->SetComboBox(modal->GetSelectedTable());
+
         setCentralWidget(m_pEditor);
     }
 }
@@ -118,7 +135,7 @@ void MainWindow::createActions()
     const QIcon mapIcon = QIcon::fromTheme("map");
     QAction *switchToMapAct = new QAction(mapIcon, tr("&Map view"), this);
     switchToMapAct->setStatusTip(tr("Open Map View"));
-    //connect(switchToMapAct, &QAction::triggered, this, /*&MainWindow::open*/);
+    connect(switchToMapAct, &QAction::triggered, this, &MainWindow::onSwitchToMap);
     stagesMenu->addAction(switchToMapAct);
 
     stagesMenu->addSeparator();
@@ -126,7 +143,7 @@ void MainWindow::createActions()
     const QIcon tableIcon = QIcon::fromTheme("table");
     QAction *switchToTableAct = new QAction(tableIcon, tr("&Table view"), this);
     switchToTableAct->setStatusTip(tr("Open selected database table"));
-    //connect(switchToTableAct, &QAction::triggered, this, /*&MainWindow::open*/);
+    connect(switchToTableAct, &QAction::triggered, this, &MainWindow::onSwitchToTable);
     stagesMenu->addAction(switchToTableAct);
 
     stagesMenu->addSeparator();
@@ -153,6 +170,20 @@ void MainWindow::createActions()
 MainWindow::~MainWindow()
 {
     //TODO disconnects, connecting obj into data members
+}
+
+void MainWindow::onSwitchToMap()
+{
+    //TODO!: qstackwidget a central widget
+    setCentralWidget(m_pMapWidget->GetGraphicsView());
+}
+
+void MainWindow::onSwitchToTable()
+{
+    if(m_pEditor)
+        setCentralWidget(m_pEditor);
+    else
+        QMessageBox::warning(this, tr("DB Warning"), tr("DB isn't opened yet!"));
 }
 
 void MainWindow::createStatusBar()

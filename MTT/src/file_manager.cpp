@@ -3,13 +3,14 @@
 #include <QTextStream>
 #include <QTextCodec>
 #include <QByteArray>
+#include <QDir>
 
 #include <string>
 
-static const QString COUNTY_CSV_PATH = "../MTT/resources/counties.csv";
-static const QString COUNTY_SEAT_CSV_PATH = "../MTT/resources/county_seats.csv";
-static const QString REGION_CSV_PATH = "../MTT/resources/regions.csv";
-static const QString LARGE_REGION_CSV_PATH = "../MTT/resources/large_regions.csv";
+static const QString COUNTY_CSV_PATH = QDir::toNativeSeparators("../MTT/resources/counties.csv");
+static const QString COUNTY_SEAT_CSV_PATH = QDir::toNativeSeparators("../MTT/resources/county_seats.csv");
+static const QString REGION_CSV_PATH = QDir::toNativeSeparators("../MTT/resources/regions.csv");
+static const QString LARGE_REGION_CSV_PATH = QDir::toNativeSeparators("../MTT/resources/large_regions.csv");
 constexpr std::size_t DELIMITER_ROW = 29;
 
 

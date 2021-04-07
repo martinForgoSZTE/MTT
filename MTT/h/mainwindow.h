@@ -3,16 +3,17 @@
 
 #include <QMainWindow>
 #include "db_manager.h"
+#include "table_editor_widget.h"
 
 class QAction;
 class QMenu;
 class QStackedWidget;
 
 class MapWidget;
-class TableEditor;
 
 class MainWindow : public QMainWindow
 {
+    friend void TableEditor::onCurrentTextChanged(const QString&);
     Q_OBJECT
 
 public:
@@ -23,6 +24,11 @@ public:
     MainWindow& operator=(const MainWindow&) = delete;
     MainWindow(MainWindow&&) = delete;
     MainWindow& operator=(MainWindow&&) = delete;
+
+    bool SerializeDB() const
+    {
+        return m_dbMan.SerializeDB();
+    }
 
 /*    void loadFile(const QString &fileName);
 
@@ -44,6 +50,8 @@ private:
 private slots:
     void FileOpen();
     void DBOpen();
+    void onSwitchToMap();
+    void onSwitchToTable();
     //bool save();
 
 private:

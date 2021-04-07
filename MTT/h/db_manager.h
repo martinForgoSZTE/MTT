@@ -8,9 +8,6 @@
 #include <QStringList>
 
 
-inline const QString CONN_NAME = "StoreConn";
-
-
 class QSqlQuery;
 
 class DB_Manager
@@ -33,10 +30,13 @@ public:
 
     QString CreateCustomDB(const QString& filename);
     QSet<QString> GetTables() const;
-    bool RemoveConn(const QString& szConn);
-    bool RemoveConns();
-    void SetStoreDB(const QString& szPath = ":memory:", const QString& szConnName = CONN_NAME, const QString& szDriver = "QSQLITE");
+    void SetStoreDB(const QString& szPath = ":memory:", const QString& szDriver = "QSQLITE");
     QSqlDatabase& GetStoreDB();
+    QList<QString> GetRealTables() const;
+
+    bool SerializeDB();
+
+    bool storeIsInMemory;
 
 private:
     void CreateCountiesIfNotExists(const QString&);

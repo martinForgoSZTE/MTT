@@ -5,10 +5,7 @@
 #include <QVector>
 
 #include "db_entry.h"
-#include "county.h"
-#include "county_seat.h"
-#include "region.h"
-#include "large_region.h"
+#include "entry_position.h"
 
 class QTextStream;
 
@@ -19,10 +16,10 @@ public:
     ~File_Manager() = default;
 
     Record_Wrapper parse(QString);
-    QVector<County> GetCounties();
-    QVector<County_Seat> GetCountySeats();
-    QVector<Region> GetRegions();
-    QVector<Large_Region> GetLargeRegions();
+    QVector<EntryPosition> GetCounties();
+    QVector<EntryPosition> GetCountySeats();
+    QVector<EntryPosition> GetRegions();
+    QVector<EntryPosition> GetLargeRegions();
 
 private:
     bool CheckEncodingIsUTF8(QTextStream&) const;

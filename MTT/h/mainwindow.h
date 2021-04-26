@@ -62,6 +62,7 @@ private:
     DB_Manager& m_dbMan;
     MapWidget* m_pMapWidget;
     TableEditor* m_pEditor;
+    QStackedWidget* m_pStackWidget;
 };
 
 #endif

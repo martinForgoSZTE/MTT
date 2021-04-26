@@ -17,7 +17,10 @@
 MainWindow::MainWindow(DB_Manager& db_manager) noexcept
     : m_dbMan(db_manager), m_pMapWidget(new MapWidget(this)), m_pEditor(nullptr)
 {
-    setCentralWidget(m_pMapWidget->GetGraphicsView());
+    m_pStackWidget = new QStackedWidget(this);
+    m_pStackWidget->addWidget(m_pMapWidget->GetGraphicsView());
+
+    setCentralWidget(m_pStackWidget);
 
     createActions();
     createStatusBar();
@@ -33,34 +36,40 @@ void MainWindow::FileOpen()
 
         tablename = m_dbMan.CreateCustomDB(fileName);
         if(!m_pEditor)
+        {
             m_pEditor = new TableEditor( this);
+            m_pStackWidget->insertWidget(m_pStackWidget->count()+1, m_pEditor);
+            m_pStackWidget->setCurrentWidget(m_pEditor);
+        }
         else
             m_pEditor->RemoveComboBox();
 
         m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tablename + "_Data");
         m_pEditor->SetCustomLayout();
-
-        setCentralWidget(m_pEditor);
     }
 }
 
 void MainWindow::DBOpen()
 {
-    m_dbMan.SetStoreDB("./store.db");
+    m_dbMan.SetStoreDB(STORE_DB_PATH);
 
-    auto tablesSet = m_dbMan.GetTables();
+    auto tablesSet = m_dbMan.GetTables(m_dbMan.GetStoreDB());
     QStringList tables(tablesSet.begin(), tablesSet.end());
 
     DBModal* modal = new DBModal(tables);
     if(modal->exec())
     {
         if(!m_pEditor)
+        {
             m_pEditor = new TableEditor( this);
+            m_pStackWidget->insertWidget(m_pStackWidget->count()+1, m_pEditor);
+            m_pStackWidget->setCurrentWidget(m_pEditor);
+        }
         m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tables[0] + "_Data");
         m_pEditor->SetCustomLayout();
         m_pEditor->SetComboBox(modal->GetSelectedTable());
 
-        setCentralWidget(m_pEditor);
+        auto c = m_dbMan.GetCoordinates(tables[0] + "_Meta");
     }
 }
 
@@ -174,16 +183,15 @@ MainWindow::~MainWindow()
 
 void MainWindow::onSwitchToMap()
 {
-    //TODO!: qstackwidget a central widget
-    setCentralWidget(m_pMapWidget->GetGraphicsView());
+    m_pStackWidget->setCurrentWidget(m_pMapWidget->GetGraphicsView());
 }
 
 void MainWindow::onSwitchToTable()
 {
     if(m_pEditor)
-        setCentralWidget(m_pEditor);
+        m_pStackWidget->setCurrentWidget(m_pEditor);
     else
-        QMessageBox::warning(this, tr("DB Warning"), tr("DB isn't opened yet!"));
+        QMessageBox::warning(this, tr("DB Warning"), tr("Data isn't loaded yet!"));
 }
 
 void MainWindow::createStatusBar()

@@ -6,6 +6,11 @@
 #include <QVariant>
 #include <tuple>
 #include <QStringList>
+#include <vector>
+
+#include "mtt_utility.h"
+#include "mtt_Coordinate.h"
+#include "constants.h"
 
 
 class QSqlQuery;
@@ -29,21 +34,23 @@ public:
     };
 
     QString CreateCustomDB(const QString& filename);
-    QSet<QString> GetTables() const;
-    void SetStoreDB(const QString& szPath = ":memory:", const QString& szDriver = "QSQLITE");
+    QSet<QString> GetTables(const QSqlDatabase&) const;
+    void SetStoreDB(const QString& szPath = ":memory:", const QString& szDriver = SQLITE_DRIVER);
     QSqlDatabase& GetStoreDB();
-    QList<QString> GetRealTables() const;
+    QList<QString> GetRealTables(const QSqlDatabase&) const;
+    QVector<Coordinate> GetCoordinates(const QString& tableName);
 
     bool SerializeDB();
 
     bool storeIsInMemory;
 
 private:
-    void CreateCountiesIfNotExists(const QString&);
-    void CreateCountySeatsIfNotExists(const QString&);
-    void CreateRegionsIfNotExists(const QString&);
-    void CreateLRegionsIfNotExists(const QString&);
+    void CreateCountiesIfNotExists();
+    void CreateCountySeatsIfNotExists();
+    void CreateRegionsIfNotExists();
+    void CreateLRegionsIfNotExists();
     bool CheckIfTableExists(QSqlDatabase&, const QString& tableName);
+    bool OpenDB(QSqlDatabase& db, const QString& conn, const QString& path);
     int GetSizeOfResultSet(QSqlDatabase&, QSqlQuery&);
 
     QSqlDatabase m_CommonDB;

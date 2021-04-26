@@ -1,12 +1,13 @@
-#ifndef REGION_H
-#define REGION_H
+#ifndef EntryPosition_H
+#define EntryPosition_H
 
 #include <QString>
 
-class Region
+class EntryPosition
 {
 public:
     QString name;
+    QString county_seat = "NULL";
     QString latitude;
     QString longitude;
 };

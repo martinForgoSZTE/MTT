@@ -1,4 +1,5 @@
 ﻿#include "file_manager.h"
+#include "constants.h"
 
 #include <QTextStream>
 #include <QTextCodec>
@@ -7,11 +8,7 @@
 
 #include <string>
 
-static const QString COUNTY_CSV_PATH = QDir::toNativeSeparators("../MTT/resources/counties.csv");
-static const QString COUNTY_SEAT_CSV_PATH = QDir::toNativeSeparators("../MTT/resources/county_seats.csv");
-static const QString REGION_CSV_PATH = QDir::toNativeSeparators("../MTT/resources/regions.csv");
-static const QString LARGE_REGION_CSV_PATH = QDir::toNativeSeparators("../MTT/resources/large_regions.csv");
-constexpr std::size_t DELIMITER_ROW = 29;
+#include "entry_position.h"
 
 
 bool File_Manager::CheckEncodingIsUTF8(QTextStream& ts) const
@@ -150,10 +147,10 @@ void File_Manager::CheckAreaInfo(typename DB_Record::area_info& info , QString& 
 }
 
 
-QVector<County> File_Manager::GetCounties()
+QVector<EntryPosition> File_Manager::GetCounties()
 {
     QFile counties(COUNTY_CSV_PATH);
-    QVector<County> ret;
+    QVector<EntryPosition> ret;
     if(counties.open(QIODevice::ReadOnly))
     {
         QTextStream ts(&counties);
@@ -161,7 +158,7 @@ QVector<County> File_Manager::GetCounties()
         while(!ts.atEnd())
         {
             QString line = ts.readLine();
-            County entry;
+            EntryPosition entry;
             auto cols = line.split(";");
             entry.name = cols[0];
             entry.county_seat = cols[1];
@@ -171,10 +168,10 @@ QVector<County> File_Manager::GetCounties()
     return ret;
 }
 
-QVector<County_Seat> File_Manager::GetCountySeats()
+QVector<EntryPosition> File_Manager::GetCountySeats()
 {
     QFile countySeasts(COUNTY_SEAT_CSV_PATH);
-    QVector<County_Seat> ret;
+    QVector<EntryPosition> ret;
     if(countySeasts.open(QIODevice::ReadOnly))
     {
         QTextStream ts(&countySeasts);
@@ -182,21 +179,22 @@ QVector<County_Seat> File_Manager::GetCountySeats()
         while(!ts.atEnd())
         {
             QString line = ts.readLine();
-            County_Seat entry;
+            EntryPosition entry;
             auto cols = line.split(";");
             entry.name = cols[0];
-            entry.latitude = cols[1];
-            entry.longitude = cols[2];
+            entry.county_seat = cols[1];
+            entry.latitude = cols[2];
+            entry.longitude = cols[3];
             ret.push_back(entry);
         }
     }
     return ret;
 }
 
-QVector<Region> File_Manager::GetRegions()
+QVector<EntryPosition> File_Manager::GetRegions()
 {
     QFile regions(REGION_CSV_PATH);
-    QVector<Region> ret;
+    QVector<EntryPosition> ret;
     if(regions.open(QIODevice::ReadOnly))
     {
         QTextStream ts(&regions);
@@ -204,7 +202,7 @@ QVector<Region> File_Manager::GetRegions()
         while(!ts.atEnd())
         {
             QString line = ts.readLine();
-            Region entry;
+            EntryPosition entry;
             auto cols = line.split(";");
             entry.name = cols[0];
             entry.latitude = cols[1];
@@ -215,10 +213,10 @@ QVector<Region> File_Manager::GetRegions()
     return ret;
 }
 
-QVector<Large_Region> File_Manager::GetLargeRegions()
+QVector<EntryPosition> File_Manager::GetLargeRegions()
 {
     QFile lregions(COUNTY_SEAT_CSV_PATH);
-    QVector<Large_Region> ret;
+    QVector<EntryPosition> ret;
     if(lregions.open(QIODevice::ReadOnly))
     {
         QTextStream ts(&lregions);
@@ -226,7 +224,7 @@ QVector<Large_Region> File_Manager::GetLargeRegions()
         while(!ts.atEnd())
         {
             QString line = ts.readLine();
-            Large_Region entry;
+            EntryPosition entry;
             auto cols = line.split(";");
             entry.name = cols[0];
             entry.latitude = cols[1];

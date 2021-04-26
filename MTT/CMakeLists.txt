@@ -11,11 +11,11 @@ set(MTT_HEADERS
 "h/mapwidget.h"
 "h/table_editor_widget.h"
 "h/db_entry.h"
-"h/county.h"
-"h/county_seat.h"
-"h/region.h"
-"h/large_region.h"
+"h/entry_position.h"
 "h/db_modal_dialog.h"
+"h/mtt_utility.h"
+"h/mtt_Coordinate.h"
+"h/constants.h"
 )
 
 set(MTT_SOURCES
@@ -26,6 +26,7 @@ set(MTT_SOURCES
 "src/table_editor_widget.cpp"
 "src/db_modal_dialog.cpp"
 "src/MTT.cpp"
+"src/mtt_utility.cpp"
 )
 
 qt5_add_resources(QT_RESOURCES
@@ -35,5 +36,4 @@ qt5_add_resources(QT_RESOURCES
 
 target_sources(MTT PRIVATE ${MTT_HEADERS} ${MTT_SOURCES} ${QT_RESOURCES})
 target_include_directories(MTT PRIVATE  ${Qt5Widgets_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/h)
-add_definitions(${Qt5Widgets_DEFINITIONS})
 target_link_libraries(MTT PRIVATE Qt5::Core Qt5::Widgets Qt5::Charts Qt5::Sql)

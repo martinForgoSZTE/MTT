@@ -1,48 +1,61 @@
 #include "db_manager.h"
 #include "file_manager.h"
 #include "db_entry.h"
-#include "county.h"
-#include "county_seat.h"
-#include "region.h"
-#include "large_region.h"
+#include "entry_position.h"
+#include "constants.h"
 
 #include <QSqlQuery>
 #include <QFile>
 #include <QVector>
-#include <tuple>
-#include <type_traits>
 #include <QSet>
 
-static const QString COMMON_DB_PATH = QDir::toNativeSeparators("./common.db");
-static const QString STORE_DB_PATH = QDir::toNativeSeparators("./store.db");
-static const QString STORE_DB_PREFIX = "store";
-inline const QString CONN_NAME = "StoreConn";
-
-//TODO iterating through a tuple's elements -> 1 method instead of 3
 // void CreateTableIfNotExists(const QString& driver, const QString& connName, const QString& tableName, const QString& dbPath, const QString&, ...); params into a blob obj
-static const QString CREATE_COUNTY_TABLE_STRING = "create table if not exists County(name varchar(50), county_seat varchar(50))";
-static const QString CREATE_COUNTY_SEAT_TABLE_STRING = "create table if not exists County_Seat("
-                                                       "name varchar(50),"
-                                                       "longitude real,"
-                                                       "latitude real"
-                                                       ")";
 
-
-/*
-template <class Tuple, class F, std::size_t... I>
-F tuple_for_each_impl(Tuple&& tuple, F&& f, std::index_sequence<I...>)
+QVector<Coordinate> DB_Manager::GetCoordinates(const QString& tableName)
 {
-    (f(std::get<I>(tuple)), ...);
-    return f;
-}
+    QVector<Coordinate> mapped_coords;
 
-template <class Tuple, class F>
-constexpr decltype(auto) for_each(Tuple&& tuple, F&& f)
-{
-    return tuple_for_each_impl(std::forward<Tuple>(tuple), std::forward<F>(f),
-                         std::make_index_sequence<std::tuple_size<std::remove_reference_t<Tuple>>::value>{});
+    if(!m_CommonDB.isOpen())
+        m_CommonDB.open();
+    if(!m_StoreDB.isOpen())
+        m_StoreDB.open();
+
+    auto commonTables = GetRealTables(m_CommonDB);
+
+    QString sqlAttach = QString("ATTACH DATABASE '%1' AS common").arg(QDir::toNativeSeparators(COMMON_DB_PATH));
+    QSqlQuery q_attach = m_StoreDB.exec(sqlAttach);
+
+    QSqlQuery query(m_StoreDB);
+    bool isCountyRead = false;
+    for(auto& commonTable : commonTables)
+    {
+        QString queryString;
+        if(commonTable.contains(COUNTY_TABLE, Qt::CaseInsensitive) && !isCountyRead)
+        {
+            isCountyRead = true;
+            queryString = "select " + tableName + ".area_name, al.longi, al.lati from " + tableName + ","
+                    "(select County.name as CountyName, County_Seat.longitude as longi, County_Seat.latitude as lati from County, County_Seat where County.county_seat=County_Seat.name) AS al"
+                    "where al.CountyName=" + tableName + ".area_name";
+        }
+        else
+        {
+            queryString = "SELECT " + tableName + ".area_name, " + commonTable + ".longitude, " + commonTable + ".latitude FROM " + tableName + ", " + commonTable + " WHERE " + tableName + ".area_name=" + commonTable + ".name";
+        }
+
+        q_attach.exec(queryString);
+        qDebug() << q_attach.lastError().text();
+        while(q_attach.next())
+        {
+           Coordinate coord;
+           coord.area = q_attach.value(0).toString();
+           coord.geo_coord.longitude = q_attach.value(1).toDouble();
+           coord.geo_coord.latitude = q_attach.value(2).toDouble();
+           mapped_coords.append(coord);
+        }
+    }
+
+    return mapped_coords;
 }
-*/
 
 
 DB_Manager::DB_Manager(const QString& driver)
@@ -60,10 +73,10 @@ DB_Manager::DB_Manager(const QString& driver)
             file.open(QIODevice::ReadWrite);
             file.close();
         }
-        CreateCountiesIfNotExists(driver);
-        CreateCountySeatsIfNotExists(driver);
-        CreateRegionsIfNotExists(driver);
-        CreateLRegionsIfNotExists(driver);
+        CreateCountiesIfNotExists();
+        CreateCountySeatsIfNotExists();
+        CreateRegionsIfNotExists();
+        CreateLRegionsIfNotExists();
 
         if(m_CommonDB.isValid() && m_CommonDB.isOpen())
             m_CommonDB.close();
@@ -90,100 +103,82 @@ DB_Manager::DB_Manager(const QString& driver)
         return numRows;
     }
 
-    void DB_Manager::CreateCountiesIfNotExists(const QString& driver)
+    bool DB_Manager::OpenDB(QSqlDatabase& db, const QString& conn, const QString& path)
     {
-        if(!m_CommonDB.isValid())
+        if(!db.isValid())
         {
-            m_CommonDB = QSqlDatabase::addDatabase(driver, "CommonConn");
-            m_CommonDB.setDatabaseName(COMMON_DB_PATH);
+            db = QSqlDatabase::addDatabase(SQLITE_DRIVER, conn);
+            db.setDatabaseName(path);
         }
-        if(!m_CommonDB.isOpen())
+        if(!db.isOpen())
         {
-            if(!m_CommonDB.open())
+            if(!db.open())
             {
-                QString e = m_CommonDB.lastError().driverText();
+                QString e = db.lastError().driverText();
                 qDebug(e.toUtf8());
-                return;
+                return false;
             }
         }
-        if(!CheckIfTableExists(m_CommonDB, "County"))
+        return true;
+    }
+
+    void DB_Manager::CreateCountiesIfNotExists()
+    {
+        if(!OpenDB(m_CommonDB, COMMON_CONN_NAME, COMMON_DB_PATH))
+        {
+            return;
+        }
+
+        if(!CheckIfTableExists(m_CommonDB, COUNTY_TABLE))
         {
             File_Manager man;
-            QVector<County> counties =  man.GetCounties();
+            auto county_seats =  man.GetCounties();
 
             QSqlQuery query(m_CommonDB);
-            query.exec("create table if not exists Counties(name varchar(50), county_seat varchar(50))");
-            for(auto& entry : counties)
+            query.exec(CREATE_TABLE_COUNTY);
+            for(const auto& entry : county_seats)
             {
-                query.exec("insert into County(name, county_seat) values('" + entry.name + "', '" + entry.county_seat + "')");
+                query.exec("insert into County values('" + entry.name + "', '" + entry.county_seat + ")");
             }
         }
     }
 
-    void DB_Manager::CreateCountySeatsIfNotExists(const QString& driver)
+    void DB_Manager::CreateCountySeatsIfNotExists()
     {
-        if(!m_CommonDB.isValid())
+        if(!OpenDB(m_CommonDB, COMMON_CONN_NAME, COMMON_DB_PATH))
         {
-            m_CommonDB = QSqlDatabase::addDatabase(driver, "CommonConn");
-            m_CommonDB.setDatabaseName(COMMON_DB_PATH);
-        }
-        if(!m_CommonDB.isOpen())
-        {
-            if(!m_CommonDB.open())
-            {
-                QString e = m_CommonDB.lastError().driverText();
-                qDebug(e.toUtf8());
-                return;
-            }
+            return;
         }
 
-        if(!CheckIfTableExists(m_CommonDB, "County_Seat"))
+        if(!CheckIfTableExists(m_CommonDB, COUNTY_SEAT_TABLE))
         {
             File_Manager man;
-            QVector<County_Seat> county_seats =  man.GetCountySeats();
+            auto county_seats =  man.GetCountySeats();
 
             QSqlQuery query(m_CommonDB);
-            query.exec("create table if not exists County_Seats("
-                       "name varchar(50),"
-                       "longitude real,"
-                       "latitude real"
-                       ")");
-            for(auto& entry : county_seats)
+            query.exec(CREATE_TABLE_COUNTY_SEAT);
+            for(const auto& entry : county_seats)
             {
-                query.exec("insert into County_Seat(name, longitude, latitude) values('" + entry.name + "', " + entry.longitude + ", " + entry.latitude + ")");
+                query.exec("insert into County_Seat(name, seat_name, longitude, latitude) values('" + entry.name + "', '" + entry.county_seat + "', " + entry.longitude + ", " + entry.latitude + ")");
             }
         }
     }
 
-    void DB_Manager::CreateRegionsIfNotExists(const QString& driver)
+    void DB_Manager::CreateRegionsIfNotExists()
     {
-        if(!m_CommonDB.isValid())
+        if(!OpenDB(m_CommonDB, COMMON_CONN_NAME, COMMON_DB_PATH))
         {
-            m_CommonDB = QSqlDatabase::addDatabase(driver, "CommonConn");
-            m_CommonDB.setDatabaseName(COMMON_DB_PATH);
-        }
-        if(!m_CommonDB.isOpen())
-        {
-            if(!m_CommonDB.open())
-            {
-                QString e = m_CommonDB.lastError().driverText();
-                qDebug(e.toUtf8());
-                return;
-            }
+            return;
         }
 
-        if(!CheckIfTableExists(m_CommonDB, "Regions"))
+        if(!CheckIfTableExists(m_CommonDB, REGIONS_TABLE))
         {
             File_Manager man;
-            QVector<Region> regions =  man.GetRegions();
+            auto regions =  man.GetRegions();
 
             QSqlQuery query(m_CommonDB);
-            query.exec("create table if not exists Regions("
-                       "name varchar(50),"
-                       "longitude real,"
-                       "latitude real"
-                       ")");
-            for(auto& entry : regions)
+            query.exec(CREATE_TABLE_REGIONS);
+            for(const auto& entry : regions)
             {
                 query.exec("insert into Regions(name, longitude, latitude) values('" + entry.name + "', " + entry.longitude + ", " + entry.latitude + ")");
             }
@@ -191,35 +186,21 @@ DB_Manager::DB_Manager(const QString& driver)
     }
 
 
-    void DB_Manager::CreateLRegionsIfNotExists(const QString& driver)
+    void DB_Manager::CreateLRegionsIfNotExists()
     {
-        if(!m_CommonDB.isValid())
+        if(!OpenDB(m_CommonDB, COMMON_CONN_NAME, COMMON_DB_PATH))
         {
-            m_CommonDB = QSqlDatabase::addDatabase(driver, "CommonConn");
-            m_CommonDB.setDatabaseName(COMMON_DB_PATH);
-        }
-        if(!m_CommonDB.isOpen())
-        {
-            if(!m_CommonDB.open())
-            {
-                QString e = m_CommonDB.lastError().driverText();
-                qDebug(e.toUtf8());
-                return;
-            }
+            return;
         }
 
-        if(!CheckIfTableExists(m_CommonDB, "LRegions"))
+        if(!CheckIfTableExists(m_CommonDB, LREGIONS_TABLE))
         {
             File_Manager man;
-            QVector<Large_Region> lregions =  man.GetLargeRegions();
+            auto lregions =  man.GetLargeRegions();
 
             QSqlQuery query(m_CommonDB);
-            query.exec("create table if not exists LRegions("
-                       "name varchar(50),"
-                       "longitude real,"
-                       "latitude real"
-                       ")");
-            for(auto& entry : lregions)
+            query.exec(CREATE_TABLE_LREGIONS);
+            for(const auto& entry : lregions)
             {
                 query.exec("insert into LRegions(name, longitude, latitude) values('" + entry.name + "', " + entry.longitude + ", " + entry.latitude + ")");
             }
@@ -285,10 +266,10 @@ DB_Manager::DB_Manager(const QString& driver)
         m_StoreDB.close();
      }
 
-     if(QSqlDatabase::connectionNames().contains(CONN_NAME))
-         QSqlDatabase::removeDatabase(CONN_NAME);
+     if(QSqlDatabase::connectionNames().contains(STORE_CONN_NAME))
+         QSqlDatabase::removeDatabase(STORE_CONN_NAME);
 
-     m_StoreDB = QSqlDatabase::addDatabase(szDriver, CONN_NAME);
+     m_StoreDB = QSqlDatabase::addDatabase(szDriver, STORE_CONN_NAME);
      m_StoreDB.setDatabaseName(szPath);
      if(!m_StoreDB.open())
      {
@@ -302,11 +283,11 @@ DB_Manager::DB_Manager(const QString& driver)
     return m_StoreDB;
  }
 
- QSet<QString> DB_Manager::GetTables() const
+ QSet<QString> DB_Manager::GetTables(const QSqlDatabase& db) const
  {
      QSet<QString> rSet;
-
-     QSqlQuery query = m_StoreDB.exec("SELECT name FROM sqlite_master WHERE type='table'");
+     qDebug() << QDir::currentPath();
+     QSqlQuery query = db.exec("SELECT name FROM sqlite_master WHERE type='table';");
      if(query.lastError().text() != "")
      {
         qDebug() << query.lastError().text();
@@ -320,11 +301,11 @@ DB_Manager::DB_Manager(const QString& driver)
      return rSet;
  }
 
- QList<QString> DB_Manager::GetRealTables() const
+ QList<QString> DB_Manager::GetRealTables(const QSqlDatabase& db) const
  {
      QList<QString> rList;
 
-     QSqlQuery query(m_StoreDB);
+     QSqlQuery query(db);
      query.exec("SELECT name FROM sqlite_master WHERE type='table'");
      while(query.next())
      {
@@ -344,7 +325,7 @@ DB_Manager::DB_Manager(const QString& driver)
          QString sqlAttach = QString("ATTACH DATABASE '%1' AS " + STORE_DB_PREFIX).arg(QDir::toNativeSeparators(STORE_DB_PATH));
          QSqlQuery q_attach = m_StoreDB.exec(sqlAttach);
 
-         auto tables = GetRealTables();
+         auto tables = GetRealTables(m_StoreDB);
          for(auto& table : tables)
          {
             if(CheckIfTableExists(m_StoreDB, STORE_DB_PREFIX + "." + table))

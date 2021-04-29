@@ -16,6 +16,6 @@ public:
 
    utilities::Geo_Coordinate geo_coord;
    utilities::Map_Coordinate map_coord;
-   QString area;
+   QString area = "";
    QVariant value;
 };

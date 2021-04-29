@@ -4,10 +4,15 @@
 #include <QMainWindow>
 #include "db_manager.h"
 #include "table_editor_widget.h"
+#include "mtt_Coordinate.h"
+#include "mtt_basechart.h"
+
 
 class QAction;
 class QMenu;
 class QStackedWidget;
+class ChartsManager;
+class QComboBox;
 
 class MapWidget;
 
@@ -52,17 +57,24 @@ private slots:
     void DBOpen();
     void onSwitchToMap();
     void onSwitchToTable();
+    void onBeforeSwitchToCharts();
     //bool save();
 
 private:
     void createActions();
     void createStatusBar();
+    void AddItemsToScene(const QVector<Coordinate>& coords);
+    void onSwitchToCharts(const QVector<Coordinate>& coords);
 
     QString m_curFile;
     DB_Manager& m_dbMan;
     MapWidget* m_pMapWidget;
     TableEditor* m_pEditor;
     QStackedWidget* m_pStackWidget;
+
+    ChartsManager* m_pChartsManager;
+
+    QComboBox* m_pChartTypesCombo;
 };
 
 #endif

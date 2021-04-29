@@ -8,17 +8,17 @@ namespace utilities
 
 struct Geo_Coordinate
 {
-    double latitude; //x
-    double longitude; //y
+    double latitude = 0.; //y
+    double longitude = 0.; //x
 };
 
 struct Map_Coordinate
 {
-    double width;
-    double height;
+    double x = 0.;
+    double y = 0.;
 };
 
-static Map_Coordinate CalculateMapPosition(const Geo_Coordinate& x, const std::pair<Geo_Coordinate, Map_Coordinate>& ref1, const std::pair<Geo_Coordinate, Map_Coordinate>& ref2);
+Map_Coordinate CalculateMapPosition(const Geo_Coordinate& x, const std::pair<Geo_Coordinate, Map_Coordinate>& ref1, const std::pair<Geo_Coordinate, Map_Coordinate>& ref2);
 
 }
 

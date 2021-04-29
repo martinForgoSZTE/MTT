@@ -4,7 +4,6 @@ add_executable(MTT)
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT MTT)
 
 set(MTT_HEADERS
-"h/MTT.h"
 "h/mainwindow.h"
 "h/db_manager.h"
 "h/file_manager.h"
@@ -16,9 +15,17 @@ set(MTT_HEADERS
 "h/mtt_utility.h"
 "h/mtt_Coordinate.h"
 "h/constants.h"
+"h/circle_graphics_item.h"
+"h/mtt_charts.h"
+"h/mtt_piechart.h"
+"h/mtt_basechart.h"
 )
 
 set(MTT_SOURCES
+"src/mtt_basechart.cpp"
+"src/mtt_piechart.cpp"
+"src/mtt_charts.cpp"
+"src/circle_graphics_item.cpp"
 "src/mainwindow.cpp"
 "src/db_manager.cpp"
 "src/file_manager.cpp"

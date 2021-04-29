@@ -3,7 +3,8 @@
 
 #include <QString>
 #include <QVector>
-#include <memory>
+#include <QStringList>
+
 
 struct DB_Record
 {
@@ -14,23 +15,30 @@ struct DB_Record
         int region = 0;
         int large_region = 0;
     };
-    area_info info;
-
     struct DB_Entry
     {
+        DB_Entry(const QString& area, const QString& year, const QString& data) : area_name{area}, year{year}, data{data}{}
+        DB_Entry() = default;
+        ~DB_Entry() = default;
         QString area_name;
         QString year;
         QString data;
     };
-    QVector<DB_Record::DB_Entry*> entries;
+
+    area_info info;
+    QVector<DB_Entry*> entries;
 };
 
+//TODO Data_Wrapper
 struct Record_Wrapper
 {
     QString horizontalText = "year";
     QString verticalText = "data";
     QString tableName;
     QVector<size_t> years;
+    QString selectedYear;
+
+    //"records" mean here all of the data in one year across the areas
     QVector<DB_Record*> records;
 
     void FillYears(QStringList& years)

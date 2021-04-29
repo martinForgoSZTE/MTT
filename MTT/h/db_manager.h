@@ -4,13 +4,13 @@
 #include <QtSql>
 #include <QString>
 #include <QVariant>
-#include <tuple>
 #include <QStringList>
-#include <vector>
+#include <QVector>
 
 #include "mtt_utility.h"
 #include "mtt_Coordinate.h"
 #include "constants.h"
+#include "db_entry.h"
 
 
 class QSqlQuery;
@@ -21,7 +21,7 @@ public:
     DB_Manager(const QString& driver);
     ~DB_Manager() = default;
 
-    struct DB_Blob
+    /*struct DB_Blob
     {
         QString driver;
         QString connName;
@@ -30,15 +30,18 @@ public:
         QString createTableString;
         QString insertIntoString;
         QSqlDatabase& db;
-        std::tuple<QVariant> values;
-    };
+        std::tuple<QVariant> values; //binding values?
+    };*/
 
     QString CreateCustomDB(const QString& filename);
     QSet<QString> GetTables(const QSqlDatabase&) const;
     void SetStoreDB(const QString& szPath = ":memory:", const QString& szDriver = SQLITE_DRIVER);
     QSqlDatabase& GetStoreDB();
     QList<QString> GetRealTables(const QSqlDatabase&) const;
-    QVector<Coordinate> GetCoordinates(const QString& tableName);
+
+    QVector<Coordinate> GetMappedCoordinates(const QString& tableName);
+    //TODO area név szerint a kiszedett rekordokat selectálhatom a kiválasztott koordináta pontok alapján
+    Record_Wrapper GetRecords(const QString& tablename, const QString& year = "");
 
     bool SerializeDB();
 
@@ -49,9 +52,17 @@ private:
     void CreateCountySeatsIfNotExists();
     void CreateRegionsIfNotExists();
     void CreateLRegionsIfNotExists();
+
     bool CheckIfTableExists(QSqlDatabase&, const QString& tableName);
     bool OpenDB(QSqlDatabase& db, const QString& conn, const QString& path);
     int GetSizeOfResultSet(QSqlDatabase&, QSqlQuery&);
+
+    QVector<Coordinate> GetGeoCoordinatesFromTable(const QString& tableName);
+    void MapEndPositions(QVector<Coordinate>& coords);
+    void MapGeoCoordinates(QVector<Coordinate>& coords);
+
+    QStringList GetYears(const QString& tablename);
+
 
     QSqlDatabase m_CommonDB;
     QSqlDatabase m_StoreDB;

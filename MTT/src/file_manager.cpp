@@ -183,8 +183,8 @@ QVector<EntryPosition> File_Manager::GetCountySeats()
             auto cols = line.split(";");
             entry.name = cols[0];
             entry.county_seat = cols[1];
-            entry.latitude = cols[2];
-            entry.longitude = cols[3];
+            entry.longitude = cols[2];
+            entry.latitude = cols[3];
             ret.push_back(entry);
         }
     }
@@ -215,7 +215,7 @@ QVector<EntryPosition> File_Manager::GetRegions()
 
 QVector<EntryPosition> File_Manager::GetLargeRegions()
 {
-    QFile lregions(COUNTY_SEAT_CSV_PATH);
+    QFile lregions(LARGE_REGION_CSV_PATH);
     QVector<EntryPosition> ret;
     if(lregions.open(QIODevice::ReadOnly))
     {

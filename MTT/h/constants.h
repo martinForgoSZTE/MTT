@@ -5,6 +5,9 @@
 #include <QString>
 #include <QDir>
 
+static const qreal CIRCLE_ITEM_WIDTH = 10;
+static const qreal CIRCLE_ITEM_HEIGHT = 10;
+
 static const QString& SQLITE_DRIVER = "QSQLITE";
 static const QString& APPLICATION_NAME = "MTT - Szakdoga app";
 

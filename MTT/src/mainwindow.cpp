@@ -2,6 +2,8 @@
 #include "mapwidget.h"
 #include "table_editor_widget.h"
 #include "db_modal_dialog.h"
+#include "circle_graphics_item.h"
+#include "mtt_charts.h"
 
 #include <QtWidgets>
 #include <QImage>
@@ -12,10 +14,12 @@
 #include <QVBoxLayout>
 #include <QStringList>
 #include <QMessageBox>
+#include <QVector>
+#include <QPalette>
 
 
 MainWindow::MainWindow(DB_Manager& db_manager) noexcept
-    : m_dbMan(db_manager), m_pMapWidget(new MapWidget(this)), m_pEditor(nullptr)
+    : m_dbMan(db_manager), m_pMapWidget(new MapWidget(this)), m_pEditor(nullptr), m_pChartsManager(new ChartsManager(this))
 {
     m_pStackWidget = new QStackedWidget(this);
     m_pStackWidget->addWidget(m_pMapWidget->GetGraphicsView());
@@ -39,13 +43,14 @@ void MainWindow::FileOpen()
         {
             m_pEditor = new TableEditor( this);
             m_pStackWidget->insertWidget(m_pStackWidget->count()+1, m_pEditor);
-            m_pStackWidget->setCurrentWidget(m_pEditor);
         }
         else
             m_pEditor->RemoveComboBox();
 
         m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tablename + "_Data");
         m_pEditor->SetCustomLayout();
+
+        AddItemsToScene(m_dbMan.GetMappedCoordinates(tablename + "_Meta"));
     }
 }
 
@@ -63,43 +68,23 @@ void MainWindow::DBOpen()
         {
             m_pEditor = new TableEditor( this);
             m_pStackWidget->insertWidget(m_pStackWidget->count()+1, m_pEditor);
-            m_pStackWidget->setCurrentWidget(m_pEditor);
         }
         m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tables[0] + "_Data");
         m_pEditor->SetCustomLayout();
         m_pEditor->SetComboBox(modal->GetSelectedTable());
 
-        auto c = m_dbMan.GetCoordinates(tables[0] + "_Meta");
+        AddItemsToScene(m_dbMan.GetMappedCoordinates(tables[0] + "_Meta"));
     }
 }
 
-/*void MainWindow::newFile()
+void MainWindow::AddItemsToScene(const QVector<Coordinate>& coords)
 {
-    if (maybeSave()) {
-        textEdit->clear();
-        setCurrentFile(QString());
+    auto* scene = m_pMapWidget->GetGraphicsScene();
+    for(auto& coord : coords)
+    {
+        scene->addItem(new CircleGraphicsItem(coord));
     }
 }
-
-bool MainWindow::save()
-{
-    if (curFile.isEmpty()) {
-        return saveAs();
-    } else {
-        return saveFile(curFile);
-    }
-}
-
-bool MainWindow::saveAs()
-{
-    QFileDialog dialog(this);
-    dialog.setWindowModality(Qt::WindowModal);
-    dialog.setAcceptMode(QFileDialog::AcceptSave);
-    if (dialog.exec() != QDialog::Accepted)
-        return false;
-    return saveFile(dialog.selectedFiles().first());
-}*/
-
 
 void MainWindow::createActions()
 {
@@ -160,7 +145,7 @@ void MainWindow::createActions()
     const QIcon chartsIcon = QIcon::fromTheme("chart");
     QAction *switchToChartsAct = new QAction(chartsIcon, tr("&Charts View"), this);
     switchToChartsAct->setStatusTip(tr("Open Charts view"));
-    //connect(switchToChartsAct, &QAction::triggered, this, /*&MainWindow::open*/);
+    connect(switchToChartsAct, &QAction::triggered, this, &MainWindow::onBeforeSwitchToCharts);
     stagesMenu->addAction(switchToChartsAct);
 
 
@@ -173,6 +158,19 @@ void MainWindow::createActions()
     QAction *aboutQtAct = helpMenu->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
     aboutQtAct->setStatusTip(tr("Show the Qt library's About box"));*/
 
+    QWidget* empty = new QWidget();
+    empty->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    fileToolBar->addWidget(empty);
+
+    m_pChartTypesCombo = new QComboBox();
+    m_pChartTypesCombo->setPlaceholderText("Select a Chart!");
+    m_pChartTypesCombo->addItem("PieChart", CHART_TYPES::PIECHART);
+    m_pChartTypesCombo->addItem("OtherChart");
+    fileToolBar->addWidget(m_pChartTypesCombo);
+
+    QWidget* empty2 = new QWidget();
+    empty2->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    fileToolBar->addWidget(empty2);
 
 }
 
@@ -183,7 +181,10 @@ MainWindow::~MainWindow()
 
 void MainWindow::onSwitchToMap()
 {
-    m_pStackWidget->setCurrentWidget(m_pMapWidget->GetGraphicsView());
+    if(m_pMapWidget->GetGraphicsView())
+        m_pStackWidget->setCurrentWidget(m_pMapWidget->GetGraphicsView());
+    else
+        QMessageBox::warning(this, tr("Map Warning"), tr("Map isn't loaded yet!"));
 }
 
 void MainWindow::onSwitchToTable()
@@ -194,7 +195,63 @@ void MainWindow::onSwitchToTable()
         QMessageBox::warning(this, tr("DB Warning"), tr("Data isn't loaded yet!"));
 }
 
+void MainWindow::onBeforeSwitchToCharts()
+{
+    //TODO lekérni a kiválasztott koordinátákhoz tartozó értékeket (adott évre [a legelsőre defaultból])
+    //ezeket továbbadni onSwitchToChartsnak
+}
+
+void MainWindow::onSwitchToCharts(const QVector<Coordinate>& coords)
+{
+    CHART_TYPES type = CHART_TYPES::UNKNOWN;
+    if(m_pChartTypesCombo->currentData(m_pChartTypesCombo->currentIndex()).isValid())
+    {
+        type = static_cast<CHART_TYPES>(m_pChartTypesCombo->currentData(m_pChartTypesCombo->currentIndex()).toInt());
+
+        if(m_pChartsManager)
+        {
+            if(m_pStackWidget->indexOf(m_pChartsManager->GetChart()->get()) != -1)
+            {
+                m_pStackWidget->removeWidget(m_pChartsManager->GetChart()->get());
+            }
+            m_pChartsManager->setChart(type, coords);
+            m_pStackWidget->insertWidget(m_pStackWidget->count() + 1, m_pChartsManager->GetChart()->get());
+            m_pStackWidget->setCurrentWidget(m_pChartsManager->GetChart()->get());
+        }
+    }
+    else
+        QMessageBox::warning(this, tr("Charts Warning"), tr("Charts not selected yet!"));
+}
+
 void MainWindow::createStatusBar()
 {
     statusBar()->showMessage(tr("Ready"));
 }
+
+
+/*void MainWindow::newFile()
+{
+    if (maybeSave()) {
+        textEdit->clear();
+        setCurrentFile(QString());
+    }
+}
+
+bool MainWindow::save()
+{
+    if (curFile.isEmpty()) {
+        return saveAs();
+    } else {
+        return saveFile(curFile);
+    }
+}
+
+bool MainWindow::saveAs()
+{
+    QFileDialog dialog(this);
+    dialog.setWindowModality(Qt::WindowModal);
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    if (dialog.exec() != QDialog::Accepted)
+        return false;
+    return saveFile(dialog.selectedFiles().first());
+}*/

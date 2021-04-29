@@ -20,6 +20,7 @@ public:
     MapWidget& operator=(MapWidget&&) = delete;
 
     QGraphicsView* GetGraphicsView() const;
+    QGraphicsScene* GetGraphicsScene() const{return m_pScene;}
 
 private:
     QImage *m_pImage;

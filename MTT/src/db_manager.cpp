@@ -9,11 +9,53 @@
 #include <QVector>
 #include <QSet>
 
-// void CreateTableIfNotExists(const QString& driver, const QString& connName, const QString& tableName, const QString& dbPath, const QString&, ...); params into a blob obj
+#include <utility>
 
-QVector<Coordinate> DB_Manager::GetCoordinates(const QString& tableName)
+
+QVector<Coordinate> DB_Manager::GetMappedCoordinates(const QString& tableName)
 {
-    QVector<Coordinate> mapped_coords;
+    auto coords = GetGeoCoordinatesFromTable(tableName);
+    MapEndPositions(coords);
+    MapGeoCoordinates(coords);
+    return coords;
+}
+
+void DB_Manager::MapEndPositions(QVector<Coordinate>& coords)
+{
+    Coordinate ref1;
+    Coordinate ref2;
+
+    ref1.geo_coord.latitude = 48.05242;
+    ref1.geo_coord.longitude = 22.86507;
+    ref1.map_coord.x = 763;
+    ref1.map_coord.y = 158;
+
+    ref2.geo_coord.latitude = 46.87530;
+    ref2.geo_coord.longitude = 16.1541327;
+    ref2.map_coord.x = 28;
+    ref2.map_coord.y = 348;
+
+    coords.push_back(ref1);
+    coords.push_back(ref2);
+}
+
+void DB_Manager::MapGeoCoordinates(QVector<Coordinate>& coords)
+{
+    auto ref1 = coords.takeAt(coords.size()-1);
+    auto ref2 = coords.takeAt(coords.size()-1);
+
+    auto ref1_pair = std::make_pair(ref1.geo_coord, ref1.map_coord);
+    auto ref2_pair = std::make_pair(ref2.geo_coord, ref2.map_coord);
+
+    for(auto& coord : coords)
+    {
+        coord.map_coord = utilities::CalculateMapPosition(coord.geo_coord, ref1_pair, ref2_pair);
+    }
+}
+
+QVector<Coordinate> DB_Manager::GetGeoCoordinatesFromTable(const QString& tableName)
+{
+    QVector<Coordinate> coords;
 
     if(!m_CommonDB.isOpen())
         m_CommonDB.open();
@@ -25,22 +67,11 @@ QVector<Coordinate> DB_Manager::GetCoordinates(const QString& tableName)
     QString sqlAttach = QString("ATTACH DATABASE '%1' AS common").arg(QDir::toNativeSeparators(COMMON_DB_PATH));
     QSqlQuery q_attach = m_StoreDB.exec(sqlAttach);
 
-    QSqlQuery query(m_StoreDB);
-    bool isCountyRead = false;
-    for(auto& commonTable : commonTables)
+    for(const auto& commonTable : commonTables)
     {
-        QString queryString;
-        if(commonTable.contains(COUNTY_TABLE, Qt::CaseInsensitive) && !isCountyRead)
-        {
-            isCountyRead = true;
-            queryString = "select " + tableName + ".area_name, al.longi, al.lati from " + tableName + ","
-                    "(select County.name as CountyName, County_Seat.longitude as longi, County_Seat.latitude as lati from County, County_Seat where County.county_seat=County_Seat.name) AS al"
-                    "where al.CountyName=" + tableName + ".area_name";
-        }
-        else
-        {
-            queryString = "SELECT " + tableName + ".area_name, " + commonTable + ".longitude, " + commonTable + ".latitude FROM " + tableName + ", " + commonTable + " WHERE " + tableName + ".area_name=" + commonTable + ".name";
-        }
+        QString queryString =
+                "SELECT " + tableName + ".area_name, " + commonTable + ".longitude, " + commonTable + ".latitude FROM " +
+                tableName + ", " + commonTable + " WHERE " + tableName + ".area_name=" + commonTable + ".name";
 
         q_attach.exec(queryString);
         qDebug() << q_attach.lastError().text();
@@ -50,11 +81,11 @@ QVector<Coordinate> DB_Manager::GetCoordinates(const QString& tableName)
            coord.area = q_attach.value(0).toString();
            coord.geo_coord.longitude = q_attach.value(1).toDouble();
            coord.geo_coord.latitude = q_attach.value(2).toDouble();
-           mapped_coords.append(coord);
+           coords.append(coord);
         }
     }
 
-    return mapped_coords;
+    return coords;
 }
 
 
@@ -200,9 +231,14 @@ DB_Manager::DB_Manager(const QString& driver)
 
             QSqlQuery query(m_CommonDB);
             query.exec(CREATE_TABLE_LREGIONS);
+            bool x = false;
             for(const auto& entry : lregions)
             {
-                query.exec("insert into LRegions(name, longitude, latitude) values('" + entry.name + "', " + entry.longitude + ", " + entry.latitude + ")");
+                query.prepare("insert into LRegions(name, longitude, latitude) values(?,?,?)");
+                query.addBindValue(entry.name);
+                query.addBindValue(entry.longitude);
+                query.addBindValue(entry.latitude);
+                x = query.exec();
             }
         }
     }
@@ -349,3 +385,49 @@ DB_Manager::DB_Manager(const QString& driver)
      SetStoreDB(STORE_DB_PATH);
      return rbSucc;
  }
+
+QStringList DB_Manager::GetYears(const QString& tablename)
+{
+    QStringList years;
+    QSqlQuery query(m_StoreDB);
+    query.prepare("SELECT year FROM ? GROUP BY year order by year");
+    query.addBindValue(tablename);
+    query.exec();
+    while(query.next())
+    {
+        years.push_back(query.value(0).toString());
+    }
+
+    return years;
+}
+
+Record_Wrapper DB_Manager::GetRecords(const QString& tablename, const QString& year)
+{
+    QStringList years = GetYears(tablename);
+    QString selectedYear = (year == "" ? (years.isEmpty() ? "" : years[0]) : year);
+    if(selectedYear == "")
+    {
+        qDebug() << "Selected year is NULL!";
+        return {};
+    }
+
+    Record_Wrapper wrapper;
+    wrapper.selectedYear = selectedYear;
+    wrapper.tableName = tablename;
+    wrapper.FillYears(years);
+
+    QSqlQuery query(m_StoreDB);
+    query.prepare("SELECT area_name, year, data FROM ? WHERE year=?");
+    query.addBindValue(tablename);
+    query.addBindValue(selectedYear);
+    query.exec();
+    DB_Record* record = new DB_Record;
+    while(query.next())
+    {
+        DB_Record::DB_Entry* entry = new DB_Record::DB_Entry(query.value(0).toString(), query.value(1).toString(), query.value(2).toString());
+        record->entries.push_back(entry);
+    }
+    wrapper.records.push_back(record);
+
+    return wrapper;
+}

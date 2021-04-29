@@ -2,7 +2,6 @@
 #include <iostream>
 ////
 
-#include "MTT.h"
 #include "mainwindow.h"
 #include "db_manager.h"
 #include "constants.h"

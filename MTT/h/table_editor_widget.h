@@ -24,6 +24,7 @@ public:
     void RemoveComboBox();
     void SetModelView(QSqlDatabase& db,const QString &tableName);
     void SetCustomLayout();
+    QString getCurrentPureTableName() const;
 
 private slots:
     void onSaveToDB();
@@ -45,6 +46,8 @@ private:
     QHBoxLayout *mainLayout;
 
     MainWindow* parent;
+
+    QString m_currentSelectedTablePureName;
 };
 
 #endif

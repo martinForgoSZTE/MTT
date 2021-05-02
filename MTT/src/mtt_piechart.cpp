@@ -1,4 +1,5 @@
 #include "mtt_piechart.h"
+#include "constants.h"
 
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QComboBox>
@@ -10,26 +11,13 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
 
+#include <QDebug>
+
 QT_CHARTS_USE_NAMESPACE
 
 CustomPieChart::CustomPieChart(QWidget *parent)
-    : QWidget(parent), BaseChart(), m_slice(nullptr)
+    : BaseChart(parent), m_series(nullptr), m_slice(nullptr), m_chart(nullptr)
 {
-    QChart *chart = new QChart;
-    chart->setTitle("Piechart");
-    chart->setAnimationOptions(QChart::AllAnimations);
-
-    m_series = new QPieSeries();
-    *m_series << new CustomSlice("Slice 1", 10.0);
-    *m_series << new CustomSlice("Slice 2", 20.0);
-    *m_series << new CustomSlice("Slice 3", 30.0);
-    *m_series << new CustomSlice("Slice 4", 40.0);
-    *m_series << new CustomSlice("Slice 5", 50.0);
-    m_series->setLabelsVisible();
-    chart->addSeries(m_series);
-
-    connect(m_series, &QPieSeries::clicked, this, &CustomPieChart::handleSliceClicked);
-
     m_themeComboBox = new QComboBox();
     m_themeComboBox->addItem("Qt", QChart::ChartThemeQt);
     m_themeComboBox->addItem("Light", QChart::ChartThemeLight);
@@ -46,6 +34,7 @@ CustomPieChart::CustomPieChart(QWidget *parent)
     palette.setColor(QPalette::Text, Qt::black);
     line_edit->setPalette(palette);*/
     //m_pYearCombo->addItem("PieChart", CHART_TYPES::PIECHART);
+
 
     QScrollArea *settingsScrollBar = new QScrollArea();
     QWidget *settingsContentWidget = new QWidget();
@@ -106,7 +95,7 @@ CustomPieChart::CustomPieChart(QWidget *parent)
             static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, &CustomPieChart::updateSliceSettings);
 
-    m_chartView = new QChartView(chart);
+    m_chartView = new QChartView();
 
     QVBoxLayout *settingsLayout = new QVBoxLayout();
     settingsLayout->addWidget(chartSettings);
@@ -116,7 +105,7 @@ CustomPieChart::CustomPieChart(QWidget *parent)
     settingsScrollBar->setWidget(settingsContentWidget);
     settingsScrollBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    QGridLayout *baseLayout = new QGridLayout();
+    baseLayout = new QGridLayout();
     baseLayout->addWidget(settingsScrollBar, 0, 0);
     baseLayout->addWidget(m_chartView, 0, 1);
     setLayout(baseLayout);
@@ -193,12 +182,49 @@ void CustomPieChart::handleSliceClicked(QPieSlice *slice)
     m_sliceExplodedFactor->blockSignals(false);
 }
 
+void CustomPieChart::onDataChanged()
+{
+    if(m_data.entries.size())
+    {
+        // create chart
+        m_chart = new QChart;
+        m_chart->setTitle("PieChart: " + m_data.tableName);
+        m_chart->setAnimationOptions(QChart::AllAnimations);
+
+        m_series = new QPieSeries();
+        m_series->setLabelsVisible();
+        connect(m_series, &QPieSeries::clicked, this, &CustomPieChart::handleSliceClicked);
+
+        for(auto* record : m_data.entries[0]->records)
+        {
+            auto* slice = new CustomSlice();
+            slice->setLabel(record->area_name);
+            double val = record->data.toDouble();
+            slice->setValue(val);
+            *m_series << slice;
+        }
+
+        m_chart->addSeries(m_series);
+
+        QChart* prev = nullptr;
+        if(m_chartView->chart())
+             prev = m_chartView->chart();
+
+        m_chartView->setChart(m_chart);
+
+        if(prev != nullptr)
+            delete prev;
+
+        //updateChartSettings();
+    }
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-CustomSlice::CustomSlice(QString label, qreal value)
-    : QPieSlice(label, value)
+CustomSlice::CustomSlice(QObject *parent)
+    : QPieSlice(parent)
 {
     connect(this, &CustomSlice::hovered, this, &CustomSlice::showHighlight);
 }

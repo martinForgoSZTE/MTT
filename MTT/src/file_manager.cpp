@@ -7,6 +7,7 @@
 #include <QDir>
 
 #include <string>
+#include <algorithm>
 
 #include "entry_position.h"
 
@@ -34,10 +35,10 @@ bool File_Manager::CheckEncodingIsUTF8(QTextStream& ts) const
 }
 
 //TODO: std::thread az egész parse
-Record_Wrapper File_Manager::parse(QString fileName)
+Custom_SQLite_Data_Wrapper File_Manager::parse(QString fileName)
 {
-    Record_Wrapper wrapper;
-    auto& records = wrapper.records;
+    Custom_SQLite_Data_Wrapper wrapper;
+    auto& entries = wrapper.entries;
     m_InputFile.setFileName(fileName );
     if(m_InputFile.open(QIODevice::ReadOnly))
     {
@@ -89,25 +90,26 @@ Record_Wrapper File_Manager::parse(QString fileName)
                         }
                         else
                         {
-                            DB_Record* record = new DB_Record;
+                            DB_Entry* entry = new DB_Entry;
                             auto fields = line.split(";");
                             std::size_t endYear = wrapper.years.size();
                             std::size_t startYear = wrapper.years[0];
                             std::size_t yearCounter = startYear;
 
-                            CheckAreaInfo(record->info, fields[1]);
+                            CheckAreaInfo(entry->info, fields[1]);
                             QString area_name = fields[0];
 
                             for(std::size_t i = 2; i < endYear; ++i)
                             {
-                                DB_Record::DB_Entry* entry = new DB_Record::DB_Entry;
-                                entry->area_name = area_name;
-                                entry->year = QString::number(yearCounter);
+                                DB_Entry::DB_Record* record = new DB_Entry::DB_Record;
+                                record->area_name = area_name;
+                                record->year = QString::number(yearCounter);
                                 yearCounter++;
-                                entry->data = fields[i];
-                                record->entries.push_back(entry);
+                                record->data = fields[i];
+                                record->data = record->data.replace(",", ".");
+                                entry->records.push_back(record);
                             }
-                            records.push_back(record);
+                            entries.push_back(entry);
                         }
                         pos++;
                     }
@@ -122,7 +124,7 @@ Record_Wrapper File_Manager::parse(QString fileName)
     return wrapper;
 }
 
-void File_Manager::CheckAreaInfo(typename DB_Record::area_info& info , QString& data) const
+void File_Manager::CheckAreaInfo(typename DB_Entry::area_info& info , QString& data) const
 {
     auto chunks = data.split(',');
     for(auto& chunk : chunks)

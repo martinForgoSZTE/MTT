@@ -12,6 +12,8 @@ class QPushButton;
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QGridLayout;
+class QScrollArea;
 
 class CustomSlice;
 
@@ -19,25 +21,26 @@ QT_CHARTS_BEGIN_NAMESPACE
 class QChartView;
 class QPieSeries;
 class QPieSlice;
+class QChart;
 QT_CHARTS_END_NAMESPACE
 
 QT_CHARTS_USE_NAMESPACE
 
-class CustomPieChart : public QWidget, public BaseChart
+class CustomPieChart : public BaseChart
 {
     Q_OBJECT
 
 public:
-    explicit CustomPieChart(QWidget *parent = 0);
+    explicit CustomPieChart(QWidget *parent = nullptr);
 
-    void setParent(QWidget *parent) override{ setParent(parent); }
-    CustomPieChart* get() const override{ return const_cast<CustomPieChart*>(this); };
 public Q_SLOTS:
     void updateChartSettings();
-    void CustomPieChart::updateSliceSettings();
+    void updateSliceSettings();
     void handleSliceClicked(QPieSlice *slice);
 
 private:
+    void onDataChanged() override;
+
     QDoubleSpinBox *m_hPosition;
     QDoubleSpinBox *m_vPosition;
     QDoubleSpinBox *m_sizeFactor;
@@ -60,17 +63,23 @@ private:
     QPieSeries *m_series;
     CustomSlice *m_slice;
 
+    QGridLayout* baseLayout;
+    QScrollArea *settingsScrollBar;
+    QWidget *settingsContentWidget;
+
     QComboBox* m_pYearCombo;
+    QChart *m_chart;
 };
 
 
+using qreal = double;
 
 class CustomSlice : public QPieSlice
 {
     Q_OBJECT
 
 public:
-    CustomSlice(QString label, qreal value);
+    explicit CustomSlice(QObject *parent = nullptr);
 
 
 public Q_SLOTS:

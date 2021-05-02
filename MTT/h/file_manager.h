@@ -15,7 +15,7 @@ public:
     File_Manager() = default;
     ~File_Manager() = default;
 
-    Record_Wrapper parse(QString);
+    Custom_SQLite_Data_Wrapper parse(QString);
     QVector<EntryPosition> GetCounties();
     QVector<EntryPosition> GetCountySeats();
     QVector<EntryPosition> GetRegions();
@@ -23,7 +23,7 @@ public:
 
 private:
     bool CheckEncodingIsUTF8(QTextStream&) const;
-    void CheckAreaInfo(typename DB_Record::area_info&, QString&) const;
+    void CheckAreaInfo(typename DB_Entry::area_info&, QString&) const;
 
     QFile m_InputFile;
 

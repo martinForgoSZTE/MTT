@@ -6,7 +6,7 @@
 #include <QStringList>
 
 
-struct DB_Record
+struct DB_Entry
 {
     struct area_info
     {
@@ -15,22 +15,21 @@ struct DB_Record
         int region = 0;
         int large_region = 0;
     };
-    struct DB_Entry
+    struct DB_Record
     {
-        DB_Entry(const QString& area, const QString& year, const QString& data) : area_name{area}, year{year}, data{data}{}
-        DB_Entry() = default;
-        ~DB_Entry() = default;
+        DB_Record(const QString& area, const QString& year, const QString& data) : area_name{area}, year{year}, data{data}{}
+        DB_Record() = default;
+        ~DB_Record() = default;
         QString area_name;
         QString year;
         QString data;
     };
 
     area_info info;
-    QVector<DB_Entry*> entries;
+    QVector<DB_Record*> records;
 };
 
-//TODO Data_Wrapper
-struct Record_Wrapper
+struct Custom_SQLite_Data_Wrapper
 {
     QString horizontalText = "year";
     QString verticalText = "data";
@@ -38,8 +37,8 @@ struct Record_Wrapper
     QVector<size_t> years;
     QString selectedYear;
 
-    //"records" mean here all of the data in one year across the areas
-    QVector<DB_Record*> records;
+    //"entries" mean here all of the records in one year across the areas
+    QVector<DB_Entry*> entries;
 
     void FillYears(QStringList& years)
     {

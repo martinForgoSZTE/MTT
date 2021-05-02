@@ -50,6 +50,7 @@ void CircleGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
     {
         Pressed = true;
     }
+    emit clickedOntoMapPoint(m_coord);
     update();
     QGraphicsItem::mousePressEvent(event);
 }

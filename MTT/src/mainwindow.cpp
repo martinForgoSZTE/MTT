@@ -3,7 +3,7 @@
 #include "table_editor_widget.h"
 #include "db_modal_dialog.h"
 #include "circle_graphics_item.h"
-#include "mtt_charts.h"
+#include "mtt_chart_manager.h"
 
 #include <QtWidgets>
 #include <QImage>
@@ -28,6 +28,19 @@ MainWindow::MainWindow(DB_Manager& db_manager) noexcept
 
     createActions();
     createStatusBar();
+
+    connect(m_pChartsManager, &ChartsManager::gettingDataToCoordinates, this, &MainWindow::setChartData);
+
+}
+
+void MainWindow::setChartData(const QVector<Coordinate>& selectedCoords)
+{
+    if(m_pChartsManager->GetChart() != nullptr)
+    {
+        QString currentTable = m_pEditor->getCurrentPureTableName();
+        auto dataWrapper = m_dbMan.GetRecords(currentTable, selectedCoords);
+        m_pChartsManager->setData(dataWrapper);
+    }
 }
 
 void MainWindow::FileOpen()
@@ -82,7 +95,9 @@ void MainWindow::AddItemsToScene(const QVector<Coordinate>& coords)
     auto* scene = m_pMapWidget->GetGraphicsScene();
     for(auto& coord : coords)
     {
-        scene->addItem(new CircleGraphicsItem(coord));
+        CircleGraphicsItem* circleItem = new CircleGraphicsItem(coord);
+        connect(circleItem, &CircleGraphicsItem::clickedOntoMapPoint, m_pChartsManager, &ChartsManager::onClickedOntoMapPoint);
+        scene->addItem(circleItem);
     }
 }
 
@@ -145,7 +160,7 @@ void MainWindow::createActions()
     const QIcon chartsIcon = QIcon::fromTheme("chart");
     QAction *switchToChartsAct = new QAction(chartsIcon, tr("&Charts View"), this);
     switchToChartsAct->setStatusTip(tr("Open Charts view"));
-    connect(switchToChartsAct, &QAction::triggered, this, &MainWindow::onBeforeSwitchToCharts);
+    connect(switchToChartsAct, &QAction::triggered, this, &MainWindow::onSwitchToCharts);
     stagesMenu->addAction(switchToChartsAct);
 
 
@@ -176,6 +191,7 @@ void MainWindow::createActions()
 
 MainWindow::~MainWindow()
 {
+    connect(m_pChartsManager, &ChartsManager::gettingDataToCoordinates, this, &MainWindow::setChartData);
     //TODO disconnects, connecting obj into data members
 }
 
@@ -195,32 +211,40 @@ void MainWindow::onSwitchToTable()
         QMessageBox::warning(this, tr("DB Warning"), tr("Data isn't loaded yet!"));
 }
 
-void MainWindow::onBeforeSwitchToCharts()
-{
-    //TODO lekérni a kiválasztott koordinátákhoz tartozó értékeket (adott évre [a legelsőre defaultból])
-    //ezeket továbbadni onSwitchToChartsnak
-}
-
-void MainWindow::onSwitchToCharts(const QVector<Coordinate>& coords)
+void MainWindow::onSwitchToCharts()
 {
     CHART_TYPES type = CHART_TYPES::UNKNOWN;
     if(m_pChartTypesCombo->currentData(m_pChartTypesCombo->currentIndex()).isValid())
     {
-        type = static_cast<CHART_TYPES>(m_pChartTypesCombo->currentData(m_pChartTypesCombo->currentIndex()).toInt());
-
-        if(m_pChartsManager)
+        if(m_pEditor)
         {
-            if(m_pStackWidget->indexOf(m_pChartsManager->GetChart()->get()) != -1)
+            if(m_pChartsManager && m_pChartsManager->GetSelectedCoordinates().size() != 0)
             {
-                m_pStackWidget->removeWidget(m_pChartsManager->GetChart()->get());
+                type = static_cast<CHART_TYPES>(m_pChartTypesCombo->currentData(m_pChartTypesCombo->currentIndex()).toInt());
+
+
+                if(m_pChartsManager->GetChart() != nullptr && m_pStackWidget->indexOf(m_pChartsManager->GetChart()) != -1)
+                {
+                    m_pStackWidget->removeWidget(m_pChartsManager->GetChart());
+                }
+                QString currentTable = m_pEditor->getCurrentPureTableName();
+                Custom_SQLite_Data_Wrapper dataWrapper = m_dbMan.GetRecords(currentTable + "_Data", m_pChartsManager->GetSelectedCoordinates());
+                m_pChartsManager->setChart(type, dataWrapper);
+                m_pStackWidget->insertWidget(m_pStackWidget->count() + 1, m_pChartsManager->GetChart());
+                m_pStackWidget->setCurrentWidget(m_pChartsManager->GetChart());
             }
-            m_pChartsManager->setChart(type, coords);
-            m_pStackWidget->insertWidget(m_pStackWidget->count() + 1, m_pChartsManager->GetChart()->get());
-            m_pStackWidget->setCurrentWidget(m_pChartsManager->GetChart()->get());
+            else
+            {
+                QMessageBox::warning(this, tr("Charts Warning"), tr("Map points not selected yet!"));
+            }
+        }
+        else
+        {
+            QMessageBox::warning(this, tr("Charts Warning"), tr("Data into DB not loaded yet!"));
         }
     }
     else
-        QMessageBox::warning(this, tr("Charts Warning"), tr("Charts not selected yet!"));
+        QMessageBox::warning(this, tr("Charts Warning"), tr("Chart Type not selected yet!"));
 }
 
 void MainWindow::createStatusBar()

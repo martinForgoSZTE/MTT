@@ -16,7 +16,7 @@ set(MTT_HEADERS
 "h/mtt_Coordinate.h"
 "h/constants.h"
 "h/circle_graphics_item.h"
-"h/mtt_charts.h"
+"h/mtt_chart_manager.h"
 "h/mtt_piechart.h"
 "h/mtt_basechart.h"
 )
@@ -24,7 +24,7 @@ set(MTT_HEADERS
 set(MTT_SOURCES
 "src/mtt_basechart.cpp"
 "src/mtt_piechart.cpp"
-"src/mtt_charts.cpp"
+"src/mtt_chart_manager.cpp"
 "src/circle_graphics_item.cpp"
 "src/mainwindow.cpp"
 "src/db_manager.cpp"

@@ -259,7 +259,7 @@ DB_Manager::DB_Manager(const QString& driver)
         }
 
             File_Manager man;
-            Record_Wrapper wrapper = man.parse(filename);
+            Custom_SQLite_Data_Wrapper wrapper = man.parse(filename);
             tableName = wrapper.tableName;
             QString tableNameData = tableName + "_Data";
             QString tableNameMeta = tableName + "_Meta";
@@ -269,21 +269,21 @@ DB_Manager::DB_Manager(const QString& driver)
                 QSqlQuery query(m_StoreDB);
                 query.exec("create table if not exists " + tableNameData + "(area_name varchar(100), year varchar(10), data varchar(20))");
                 query.exec("create table if not exists " + tableNameMeta + "(area_name varchar(100), capital integer, county integer, region integer, large_region integer)");
-                for(auto* record : wrapper.records)
+                for(auto* entry : wrapper.entries)
                 {
-                    if(record->entries.size())
+                    if(entry->records.size())
                     {
                         query.prepare("insert into " + tableNameMeta + " values(?,?,?,?,?)");
-                        query.addBindValue(record->entries[0]->area_name);
-                        query.addBindValue(record->info.capital);
-                        query.addBindValue(record->info.county);
-                        query.addBindValue(record->info.region);
-                        query.addBindValue(record->info.large_region);
+                        query.addBindValue(entry->records[0]->area_name);
+                        query.addBindValue(entry->info.capital);
+                        query.addBindValue(entry->info.county);
+                        query.addBindValue(entry->info.region);
+                        query.addBindValue(entry->info.large_region);
                         query.exec();
                     }
-                    for(auto* entry : record->entries)
+                    for(auto* record : entry->records)
                     {
-                        query.exec("insert into " + tableNameData + " values('" + entry->area_name + "', '" + entry->year + "', '" + entry->data + "')");
+                        query.exec("insert into " + tableNameData + " values('" + record->area_name + "', '" + record->year + "', '" + record->data + "')");
                     }
                 }
             }
@@ -390,9 +390,9 @@ QStringList DB_Manager::GetYears(const QString& tablename)
 {
     QStringList years;
     QSqlQuery query(m_StoreDB);
-    query.prepare("SELECT year FROM ? GROUP BY year order by year");
-    query.addBindValue(tablename);
-    query.exec();
+    query.prepare("SELECT year FROM " + tablename + " GROUP BY year order by year");
+    if(!query.exec())
+        qDebug() << query.lastError();
     while(query.next())
     {
         years.push_back(query.value(0).toString());
@@ -401,7 +401,7 @@ QStringList DB_Manager::GetYears(const QString& tablename)
     return years;
 }
 
-Record_Wrapper DB_Manager::GetRecords(const QString& tablename, const QString& year)
+Custom_SQLite_Data_Wrapper DB_Manager::GetRecords(const QString& tablename, const QVector<Coordinate>& coordinatesToSearchInDB, const QString& year)
 {
     QStringList years = GetYears(tablename);
     QString selectedYear = (year == "" ? (years.isEmpty() ? "" : years[0]) : year);
@@ -410,24 +410,40 @@ Record_Wrapper DB_Manager::GetRecords(const QString& tablename, const QString& y
         qDebug() << "Selected year is NULL!";
         return {};
     }
+    QString area_list = GetConcatenatedAreaSetToSearchInDB(coordinatesToSearchInDB);
 
-    Record_Wrapper wrapper;
+    Custom_SQLite_Data_Wrapper wrapper;
     wrapper.selectedYear = selectedYear;
-    wrapper.tableName = tablename;
+    wrapper.tableName = tablename.split("_")[0];
     wrapper.FillYears(years);
 
     QSqlQuery query(m_StoreDB);
-    query.prepare("SELECT area_name, year, data FROM ? WHERE year=?");
-    query.addBindValue(tablename);
-    query.addBindValue(selectedYear);
-    query.exec();
-    DB_Record* record = new DB_Record;
+    query.prepare("SELECT area_name, year, data FROM " + tablename + " WHERE year=" + selectedYear + " AND area_name IN (" + area_list + ")");
+    if(!query.exec())
+        qDebug() << query.lastError();
+    DB_Entry* entry = new DB_Entry;
     while(query.next())
     {
-        DB_Record::DB_Entry* entry = new DB_Record::DB_Entry(query.value(0).toString(), query.value(1).toString(), query.value(2).toString());
-        record->entries.push_back(entry);
+        DB_Entry::DB_Record* record = new DB_Entry::DB_Record(query.value(0).toString(), query.value(1).toString(), query.value(2).toString());
+        entry->records.push_back(record);
     }
-    wrapper.records.push_back(record);
+    wrapper.entries.push_back(entry);
 
     return wrapper;
+}
+
+QString DB_Manager::GetConcatenatedAreaSetToSearchInDB(const QVector<Coordinate>& coords)
+{
+    QString ret = "";
+    for(const auto& coord : coords)
+    {
+        if(coord.area != "")
+            ret += ("'" + coord.area + "', ");
+    }
+    if(ret != "")
+    {
+        //removing last space and ','
+        ret.chop(2);
+    }
+    return ret;
 }

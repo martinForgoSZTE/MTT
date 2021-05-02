@@ -42,6 +42,11 @@ TableEditor::TableEditor(QWidget *parent)
     connect(serializeToDBButton, &QPushButton::clicked, this, &TableEditor::onSerializeToDB);
 }
 
+QString TableEditor::getCurrentPureTableName() const
+{
+    return m_currentSelectedTablePureName;
+}
+
 void TableEditor::onSaveToDB()
 {
     model->database().transaction();
@@ -104,6 +109,8 @@ void TableEditor::onCurrentTextChanged(const QString& table)
 
 void TableEditor::SetModelView(QSqlDatabase& db, const QString &tableName)
 {
+    if(tableName.contains('_'))
+        m_currentSelectedTablePureName = tableName.split("_")[0];
     if(model)
     {
         delete model;

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "mtt_Coordinate.h"
+#include "db_entry.h"
 #include <QWidget>
+#include <QVector>
 
 enum CHART_TYPES : int
 {
@@ -10,19 +11,22 @@ enum CHART_TYPES : int
 };
 
 
-class BaseChart
+class BaseChart : public QWidget
 {
+    Q_OBJECT
 public:
-    explicit BaseChart() = default;
+    explicit BaseChart(QWidget* parent = nullptr) : QWidget(parent){}
     virtual ~BaseChart() = default;
 
-    void SetChartData(const QVector<Coordinate> data)
+    void SetChartData(const Custom_SQLite_Data_Wrapper& data)
     {
-        m_data  = data;
+        m_data = data;
+        onDataChanged();
     }
-    virtual QWidget* get() const = 0;
-    virtual void setParent(QWidget* widget) = 0;
+
+protected:
+    Custom_SQLite_Data_Wrapper m_data;
 
 private:
-    QVector<Coordinate> m_data;
+    virtual void onDataChanged() = 0;
 };

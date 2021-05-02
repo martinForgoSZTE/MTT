@@ -3,6 +3,7 @@
 #include "mtt_basechart.h"
 #include "mtt_piechart.h"
 #include "mtt_Coordinate.h"
+#include "db_entry.h"
 #include <QVector>
 #include <QMap>
 
@@ -24,21 +25,35 @@ public:
     BaseChart* createChart(CHART_TYPES type) { return m_factories[type](); }
 };
 
-class ChartsManager
+class ChartsManager : public QObject
 {
+    Q_OBJECT
 
 public:
     explicit ChartsManager(QWidget* parent);
     ~ChartsManager() = default;
 
-    void setChart(CHART_TYPES type, const QVector<Coordinate>& coords);
-    void setData(const QVector<Coordinate>& coords);
-    void setParent(QWidget* parent){m_pParent = parent;}
+    void setChart(CHART_TYPES type, const Custom_SQLite_Data_Wrapper& dataWrapper);
+    void setData(const Custom_SQLite_Data_Wrapper& dataWrapper);
+    BaseChart* GetChart() const
+    {
+        return m_pChart;
+    }
+    QVector<Coordinate> GetSelectedCoordinates() const
+    {
+        return m_selectedCoordinatesOnMap;
+    }
 
-    BaseChart* GetChart() const { return m_pChart; }
+signals:
+    void gettingDataToCoordinates(QVector<Coordinate> coords);
+
+public slots:
+    void onClickedOntoMapPoint(const Coordinate& coord);
 
 private:
     BaseChart* m_pChart;
     ChartFunctionalFactory m_factory;
     QWidget* m_pParent;
+
+    QVector<Coordinate> m_selectedCoordinatesOnMap;
 };

@@ -18,6 +18,7 @@ class MapWidget;
 
 class MainWindow : public QMainWindow
 {
+    //TODO signal - slot?
     friend void TableEditor::onCurrentTextChanged(const QString&);
     Q_OBJECT
 
@@ -57,14 +58,14 @@ private slots:
     void DBOpen();
     void onSwitchToMap();
     void onSwitchToTable();
-    void onBeforeSwitchToCharts();
+    void onSwitchToCharts();
+    void setChartData(const QVector<Coordinate>& selectedCoords);
     //bool save();
 
 private:
     void createActions();
     void createStatusBar();
     void AddItemsToScene(const QVector<Coordinate>& coords);
-    void onSwitchToCharts(const QVector<Coordinate>& coords);
 
     QString m_curFile;
     DB_Manager& m_dbMan;

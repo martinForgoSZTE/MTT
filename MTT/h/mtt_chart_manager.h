@@ -45,12 +45,16 @@ public:
     }
 
 signals:
-    void gettingDataToCoordinates(QVector<Coordinate> coords);
+    void requestToSetChartData(QVector<Coordinate> coords, const QString& year = "");
 
 public slots:
     void onClickedOntoMapPoint(const Coordinate& coord);
 
+private slots:
+    void onChangedYear(const QString& newYear);
+
 private:
+    //egyszerre egy chart tartozik hozza jelen esetben
     BaseChart* m_pChart;
     ChartFunctionalFactory m_factory;
     QWidget* m_pParent;

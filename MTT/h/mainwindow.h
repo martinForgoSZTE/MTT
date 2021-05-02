@@ -59,7 +59,7 @@ private slots:
     void onSwitchToMap();
     void onSwitchToTable();
     void onSwitchToCharts();
-    void setChartData(const QVector<Coordinate>& selectedCoords);
+    void responseToSetChartData(const QVector<Coordinate>& selectedCoords, const QString& year);
     //bool save();
 
 private:

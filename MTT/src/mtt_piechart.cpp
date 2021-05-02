@@ -28,13 +28,8 @@ CustomPieChart::CustomPieChart(QWidget *parent)
 
     m_pYearCombo = new QComboBox();
     m_pYearCombo->setPlaceholderText("Select a Year!");
-    /*auto line_edit = m_pYearCombo->lineEdit();
-    QPalette palette = line_edit->palette();
-    palette.setColor(QPalette::PlaceholderText, Qt::red);
-    palette.setColor(QPalette::Text, Qt::black);
-    line_edit->setPalette(palette);*/
-    //m_pYearCombo->addItem("PieChart", CHART_TYPES::PIECHART);
-
+    //it's an overloaded signal, so static_cast is needed with the help of a "pointer to member"
+    connect(m_pYearCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &CustomPieChart::onComboYearChanged);
 
     QScrollArea *settingsScrollBar = new QScrollArea();
     QWidget *settingsContentWidget = new QWidget();
@@ -215,8 +210,23 @@ void CustomPieChart::onDataChanged()
         if(prev != nullptr)
             delete prev;
 
-        //updateChartSettings();
+        fillYearsCombo();
+        updateChartSettings();
     }
+}
+
+void CustomPieChart::fillYearsCombo()
+{
+    for(const auto& year : m_data.years)
+    {
+        m_pYearCombo->addItem(QString::number(year), QString::number(year));
+    }
+}
+
+void CustomPieChart::onComboYearChanged(int index)
+{
+    if(index != -1)
+        emit changedYear(m_pYearCombo->itemData(index).toString());
 }
 
 

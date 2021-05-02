@@ -24,6 +24,9 @@ public:
         onDataChanged();
     }
 
+signals:
+    void changedYear(const QString& newYear);
+
 protected:
     Custom_SQLite_Data_Wrapper m_data;
 

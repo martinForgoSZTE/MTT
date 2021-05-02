@@ -33,13 +33,16 @@ class CustomPieChart : public BaseChart
 public:
     explicit CustomPieChart(QWidget *parent = nullptr);
 
-public Q_SLOTS:
+private slots:
     void updateChartSettings();
     void updateSliceSettings();
     void handleSliceClicked(QPieSlice *slice);
+    void onComboYearChanged(int index);
+
 
 private:
     void onDataChanged() override;
+    void fillYearsCombo();
 
     QDoubleSpinBox *m_hPosition;
     QDoubleSpinBox *m_vPosition;
@@ -72,8 +75,6 @@ private:
 };
 
 
-using qreal = double;
-
 class CustomSlice : public QPieSlice
 {
     Q_OBJECT
@@ -82,7 +83,7 @@ public:
     explicit CustomSlice(QObject *parent = nullptr);
 
 
-public Q_SLOTS:
+private slots:
     void showHighlight(bool show);
 
 private:

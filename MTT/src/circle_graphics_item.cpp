@@ -57,6 +57,6 @@ void CircleGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void CircleGraphicsItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
-    setToolTip("Hello");
+    setToolTip("Area: " + m_coord.area + "\n(Latitude; Longitude): (" + QString::number(m_coord.geo_coord.latitude) + ";" + QString::number(m_coord.geo_coord.longitude) + ")");
     QGraphicsItem::hoverMoveEvent(event);
 }

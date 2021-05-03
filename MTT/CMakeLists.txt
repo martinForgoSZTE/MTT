@@ -19,9 +19,11 @@ set(MTT_HEADERS
 "h/mtt_chart_manager.h"
 "h/mtt_piechart.h"
 "h/mtt_basechart.h"
+"h/mtt_barchart.h"
 )
 
 set(MTT_SOURCES
+"src/mtt_barchart.cpp"
 "src/mtt_basechart.cpp"
 "src/mtt_piechart.cpp"
 "src/mtt_chart_manager.cpp"

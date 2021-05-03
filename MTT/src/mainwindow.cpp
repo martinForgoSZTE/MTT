@@ -180,7 +180,7 @@ void MainWindow::createActions()
     m_pChartTypesCombo = new QComboBox();
     m_pChartTypesCombo->setPlaceholderText("Select a Chart!");
     m_pChartTypesCombo->addItem("PieChart", CHART_TYPES::PIECHART);
-    m_pChartTypesCombo->addItem("OtherChart");
+    m_pChartTypesCombo->addItem("BarChart", CHART_TYPES::BARCHART);
     fileToolBar->addWidget(m_pChartTypesCombo);
 
     QWidget* empty2 = new QWidget();
@@ -214,14 +214,13 @@ void MainWindow::onSwitchToTable()
 void MainWindow::onSwitchToCharts()
 {
     CHART_TYPES type = CHART_TYPES::UNKNOWN;
-    if(m_pChartTypesCombo->currentData(m_pChartTypesCombo->currentIndex()).isValid())
+    if(m_pChartTypesCombo->itemData(m_pChartTypesCombo->currentIndex()).isValid())
     {
         if(m_pEditor)
         {
             if(m_pChartsManager && m_pChartsManager->GetSelectedCoordinates().size() != 0)
             {
-                type = static_cast<CHART_TYPES>(m_pChartTypesCombo->currentData(m_pChartTypesCombo->currentIndex()).toInt());
-
+                type = static_cast<CHART_TYPES>(m_pChartTypesCombo->itemData(m_pChartTypesCombo->currentIndex()).toInt());
 
                 if(m_pChartsManager->GetChart() != nullptr && m_pStackWidget->indexOf(m_pChartsManager->GetChart()) != -1)
                 {

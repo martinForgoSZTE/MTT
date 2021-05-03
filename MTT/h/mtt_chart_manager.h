@@ -2,6 +2,7 @@
 
 #include "mtt_basechart.h"
 #include "mtt_piechart.h"
+#include "mtt_barchart.h"
 #include "mtt_Coordinate.h"
 #include "db_entry.h"
 #include <QVector>
@@ -20,7 +21,8 @@ class ChartFunctionalFactory
 public:
     ChartFunctionalFactory()
     {
-        m_factories[CHART_TYPES::PIECHART] = [] {return new CustomPieChart(); };
+        m_factories[CHART_TYPES::PIECHART] = [] { return new CustomPieChart(); };
+        m_factories[CHART_TYPES::BARCHART] = [] { return new BarChart(); };
     }
     BaseChart* createChart(CHART_TYPES type) { return m_factories[type](); }
 };

@@ -8,6 +8,7 @@ enum CHART_TYPES : int
 {
     UNKNOWN = -1,
     PIECHART = 0,
+    BARCHART = 1,
 };
 
 

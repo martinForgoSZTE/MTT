@@ -29,16 +29,24 @@ MainWindow::MainWindow(DB_Manager& db_manager) noexcept
     createActions();
     createStatusBar();
 
-    connect(m_pChartsManager, &ChartsManager::requestToSetChartData, this, &MainWindow::responseToSetChartData);
+    connect(m_pChartsManager, static_cast<void(ChartsManager::*)(QVector<Coordinate>, const QString&)>(&ChartsManager::requestToSetChartData), this,
+            static_cast<void(MainWindow::*)(const QVector<Coordinate>&, const QString&)>(&MainWindow::responseToSetChartData));
+    connect(m_pChartsManager, static_cast<void(ChartsManager::*)(QVector<Coordinate>, const QString&, const QString&)>(&ChartsManager::requestToSetChartData), this,
+            static_cast<void(MainWindow::*)(const QVector<Coordinate>&, const QString&, const QString&)>(&MainWindow::responseToSetChartData));
 
 }
 
 void MainWindow::responseToSetChartData(const QVector<Coordinate>& selectedCoords, const QString& year)
 {
+    responseToSetChartData(selectedCoords, year, year);
+}
+
+void MainWindow::responseToSetChartData(const QVector<Coordinate>& selectedCoords, const QString& startInterval, const QString& endInterval)
+{
     if(m_pChartsManager->GetChart() != nullptr)
     {
         QString currentTable = m_pEditor->getCurrentPureTableName();
-        auto dataWrapper = m_dbMan.GetRecords(currentTable + "_Data", selectedCoords, year);
+        auto dataWrapper = m_dbMan.GetRecords(currentTable + "_Data", selectedCoords, startInterval, endInterval);
         m_pChartsManager->setData(dataWrapper);
     }
 }
@@ -191,7 +199,6 @@ void MainWindow::createActions()
 
 MainWindow::~MainWindow()
 {
-    connect(m_pChartsManager, &ChartsManager::requestToSetChartData, this, &MainWindow::responseToSetChartData);
     //TODO disconnects, connecting obj into data members
 }
 

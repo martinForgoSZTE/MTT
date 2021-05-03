@@ -48,12 +48,14 @@ public:
 
 signals:
     void requestToSetChartData(QVector<Coordinate> coords, const QString& year = "");
+    void requestToSetChartData(QVector<Coordinate> coords, const QString& startInterval, const QString& endInterval);
 
 public slots:
     void onClickedOntoMapPoint(const Coordinate& coord);
 
 private slots:
     void onChangedYear(const QString& newYear);
+    void onChangedYear(const QString& startInterval, const QString& endInterval);
 
 private:
     //egyszerre egy chart tartozik hozza jelen esetben

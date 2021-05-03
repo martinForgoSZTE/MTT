@@ -15,7 +15,8 @@ void ChartsManager::setChart(CHART_TYPES type, const Custom_SQLite_Data_Wrapper&
     m_pChart->SetChartData(dataWrapper);
 
     //a delete m_pChart miatt fentebb, nem kell disconnect az előzőre
-    connect(m_pChart, &BaseChart::changedYear, this, &ChartsManager::onChangedYear);
+    connect(m_pChart, static_cast<void(BaseChart::*)(const QString&)>(&BaseChart::changedYear), this, static_cast<void(ChartsManager::*)(const QString&)>(&ChartsManager::onChangedYear));
+    connect(m_pChart, static_cast<void(BaseChart::*)(const QString&, const QString&)>(&BaseChart::changedYear), this, static_cast<void(ChartsManager::*)(const QString&, const QString&)>(&ChartsManager::onChangedYear));
 }
 
 void ChartsManager::setData(const Custom_SQLite_Data_Wrapper& dataWrapper)
@@ -40,4 +41,9 @@ void ChartsManager::onClickedOntoMapPoint(const Coordinate& coord)
 void ChartsManager::onChangedYear(const QString& newYear)
 {
     emit requestToSetChartData(m_selectedCoordinatesOnMap, newYear);
+}
+
+void ChartsManager::onChangedYear(const QString& startInterval, const QString& endInterval)
+{
+    emit requestToSetChartData(m_selectedCoordinatesOnMap, startInterval, endInterval);
 }

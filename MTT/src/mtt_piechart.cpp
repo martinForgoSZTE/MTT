@@ -190,13 +190,16 @@ void CustomPieChart::onDataChanged()
         m_series->setLabelsVisible();
         connect(m_series, &QPieSeries::clicked, this, &CustomPieChart::handleSliceClicked);
 
-        for(auto* record : m_data.entries[0]->records)
+        for(auto* entry : m_data.entries)
         {
-            auto* slice = new CustomSlice();
-            slice->setLabel(record->area_name);
-            double val = record->data.toDouble();
-            slice->setValue(val);
-            *m_series << slice;
+            for(auto* record : entry->records)
+            {
+                auto* slice = new CustomSlice();
+                slice->setLabel(record->area_name);
+                double val = record->data.toDouble();
+                slice->setValue(val);
+                *m_series << slice;
+            }
         }
 
         m_chart->addSeries(m_series);

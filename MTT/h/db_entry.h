@@ -35,7 +35,6 @@ struct Custom_SQLite_Data_Wrapper
     QString verticalText = "data";
     QString tableName;
     QVector<size_t> years;
-    QString selectedYear;
 
     //"entries" mean here all of the records in one year across the areas
     QVector<DB_Entry*> entries;

@@ -41,7 +41,7 @@ public:
 
     QVector<Coordinate> GetMappedCoordinates(const QString& tableName);
     //TODO area név szerint a kiszedett rekordokat selectálhatom a kiválasztott koordináta pontok alapján
-    Custom_SQLite_Data_Wrapper GetRecords(const QString& tablename, const QVector<Coordinate>& coordinatesToSearchInDB, const QString& year = "");
+    Custom_SQLite_Data_Wrapper GetRecords(const QString& tablename, const QVector<Coordinate>& coordinatesToSearchInDB, const QString& startInterval = "", const QString& endInterval = "");
 
     bool SerializeDB();
 

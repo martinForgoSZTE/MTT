@@ -60,6 +60,7 @@ private slots:
     void onSwitchToTable();
     void onSwitchToCharts();
     void responseToSetChartData(const QVector<Coordinate>& selectedCoords, const QString& year);
+    void responseToSetChartData(const QVector<Coordinate>& selectedCoords, const QString& startInterval, const QString& endInterval);
     //bool save();
 
 private:

@@ -401,11 +401,12 @@ QStringList DB_Manager::GetYears(const QString& tablename)
     return years;
 }
 
-Custom_SQLite_Data_Wrapper DB_Manager::GetRecords(const QString& tablename, const QVector<Coordinate>& coordinatesToSearchInDB, const QString& year)
+Custom_SQLite_Data_Wrapper DB_Manager::GetRecords(const QString& tablename, const QVector<Coordinate>& coordinatesToSearchInDB, const QString& startInterval, const QString& endInterval)
 {
     QStringList years = GetYears(tablename);
-    QString selectedYear = (year == "" ? (years.isEmpty() ? "" : years[0]) : year);
-    if(selectedYear == "")
+    QString startYear = (startInterval == "" ? (years.isEmpty() ? "" : years[0]) : startInterval);
+    QString endYear = (endInterval == "" ? (years.isEmpty() ? "" : years[0]) : endInterval);
+    if(startYear == "" || endYear == "")
     {
         qDebug() << "Selected year is NULL!";
         return {};
@@ -413,21 +414,32 @@ Custom_SQLite_Data_Wrapper DB_Manager::GetRecords(const QString& tablename, cons
     QString area_list = GetConcatenatedAreaSetToSearchInDB(coordinatesToSearchInDB);
 
     Custom_SQLite_Data_Wrapper wrapper;
-    wrapper.selectedYear = selectedYear;
     wrapper.tableName = tablename.split("_")[0];
     wrapper.FillYears(years);
 
     QSqlQuery query(m_StoreDB);
-    query.prepare("SELECT area_name, year, data FROM " + tablename + " WHERE year=" + selectedYear + " AND area_name IN (" + area_list + ")");
+    query.prepare("SELECT area_name, year, data FROM " + tablename + " WHERE area_name IN (" + area_list + ") AND year BETWEEN " + startYear + " AND " + endYear + " order by area_name, year");
     if(!query.exec())
         qDebug() << query.lastError();
-    DB_Entry* entry = new DB_Entry;
+
+    DB_Entry* prevEntry;
+    QString prevArea = "";
     while(query.next())
     {
         DB_Entry::DB_Record* record = new DB_Entry::DB_Record(query.value(0).toString(), query.value(1).toString(), query.value(2).toString());
-        entry->records.push_back(record);
+        if(query.value(0).toString() == prevArea)
+        {
+            prevEntry->records.append(record);
+        }
+        else
+        {
+            DB_Entry* newEntry = new DB_Entry;
+            newEntry->records.append(record);
+            wrapper.entries.push_back(newEntry);
+            prevEntry = newEntry;
+            prevArea = query.value(0).toString();
+        }
     }
-    wrapper.entries.push_back(entry);
 
     return wrapper;
 }

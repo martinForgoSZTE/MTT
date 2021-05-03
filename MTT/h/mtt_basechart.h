@@ -27,6 +27,7 @@ public:
 
 signals:
     void changedYear(const QString& newYear);
+    void changedYear(const QString& startInterval, const QString& endInterval);
 
 protected:
     Custom_SQLite_Data_Wrapper m_data;

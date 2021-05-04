@@ -17,12 +17,10 @@ public:
    utilities::Geo_Coordinate geo_coord;
    utilities::Map_Coordinate map_coord;
    QString area = "";
-   QVariant value;
 
    bool operator==(const Coordinate& rhs)
    {
        return area == rhs.area &&
-               value == rhs.value &&
                geo_coord.latitude == rhs.geo_coord.latitude &&
                geo_coord.longitude == rhs.geo_coord.longitude &&
                map_coord.x == rhs.map_coord.x &&

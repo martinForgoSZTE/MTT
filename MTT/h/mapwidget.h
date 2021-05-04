@@ -2,6 +2,8 @@
 #define MAPWIDGET_H
 
 #include <QWidget>
+#include <QVector>
+#include "mtt_Coordinate.h"
 
 
 class QImage;
@@ -19,8 +21,12 @@ public:
     MapWidget(MapWidget&&) = delete;
     MapWidget& operator=(MapWidget&&) = delete;
 
+    void AddItemsToScene(const QVector<Coordinate>& coords);
     QGraphicsView* GetGraphicsView() const;
     QGraphicsScene* GetGraphicsScene() const{return m_pScene;}
+
+signals:
+    void clickedOntoMapPoint(Coordinate coord);
 
 private:
     QImage *m_pImage;

@@ -114,10 +114,11 @@ DB_Manager::DB_Manager(const QString& driver)
     }
 }
 
-    bool DB_Manager::CheckIfTableExists(QSqlDatabase& db, const QString& tableName)
+    bool DB_Manager::CheckIfTableExists(QSqlDatabase& db, const QString& tableName, const QString& dbAlias)
     {
+        QString masterTableName = (dbAlias == "" ? "sqlite_master" : dbAlias + ".sqlite_master");
         QSqlQuery query(db);
-        query.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "'");
+        query.exec("SELECT name FROM " + masterTableName + " WHERE type='table' AND name='" + tableName + "'");
         return GetSizeOfResultSet(db, query) > 0;
     }
 
@@ -354,7 +355,6 @@ DB_Manager::DB_Manager(const QString& driver)
  // only in memory tables are serialized
  bool DB_Manager::SerializeDB()
  {
-     //TODO enum
      bool rbSucc = true;
      if(storeIsInMemory)
      {
@@ -364,7 +364,7 @@ DB_Manager::DB_Manager(const QString& driver)
          auto tables = GetRealTables(m_StoreDB);
          for(auto& table : tables)
          {
-            if(CheckIfTableExists(m_StoreDB, STORE_DB_PREFIX + "." + table))
+            if(CheckIfTableExists(m_StoreDB, table, STORE_DB_PREFIX))
             {
                 rbSucc = false;
                 break;

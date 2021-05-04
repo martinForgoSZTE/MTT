@@ -6,8 +6,6 @@
 #include <QDir>
 #include <QtCore>
 
-inline constexpr qreal operator "" _qr(long double value){ return qreal(value); }
-
 static const qreal CIRCLE_ITEM_WIDTH = 10;
 static const qreal CIRCLE_ITEM_HEIGHT = 10;
 

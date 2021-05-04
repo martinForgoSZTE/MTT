@@ -10,8 +10,10 @@ class QSqlTableModel;
 class QTableView;
 class QSqlDatabase;
 class QComboBox;
-class MainWindow;
 class QHBoxLayout;
+class QVBoxLayout;
+class QFormLayout;
+class QGroupBox;
 
 
 class TableEditor : public QWidget
@@ -23,17 +25,18 @@ public:
     void SetComboBox(const QString &tableName);
     void RemoveComboBox();
     void SetModelView(QSqlDatabase& db,const QString &tableName);
-    void SetCustomLayout();
     QString getCurrentPureTableName() const;
+
+signals:
+    void serializeToDB();
+    void currentTableChanged(const QString& table);
 
 private slots:
     void onSaveToDB();
-    void onSerializeToDB();
-
-public slots:
-    void onCurrentTextChanged(const QString& table);
 
 private:
+    void SetCustomLayout();
+
     QPushButton *saveDBButton;
     QPushButton *serializeToDBButton;
     QPushButton *revertButton;
@@ -44,8 +47,10 @@ private:
     QComboBox* combo;
     QStringList tables;
     QHBoxLayout *mainLayout;
-
-    MainWindow* parent;
+    QVBoxLayout* vLayout;
+    QWidget* settingsContentWidget;
+    QGroupBox* comboSettings;
+    QFormLayout* settingsLayout;
 
     QString m_currentSelectedTablePureName;
 };

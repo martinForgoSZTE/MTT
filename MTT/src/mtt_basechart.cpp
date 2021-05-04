@@ -1,16 +1,16 @@
 #include "mtt_basechart.h"
 
-BaseChart::BaseChart(QWidget* parent) :
+BaseChartWidget::BaseChartWidget(QWidget* parent) :
     QWidget(parent)
 {}
 
-void BaseChart::SetChartData(const Custom_SQLite_Data_Wrapper& data)
+void BaseChartWidget::SetChartData(const Custom_SQLite_Data_Wrapper& data)
 {
     m_data = data;
     onDataChanged();
 }
 
-void BaseChart::setWindowTheme(QChart::ChartTheme theme)
+void BaseChartWidget::setWindowTheme(QChart::ChartTheme theme)
 {
     QPalette pal = window()->palette();
     if (theme == QChart::ChartThemeLight) {

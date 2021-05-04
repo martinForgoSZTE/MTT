@@ -19,13 +19,13 @@ QT_CHARTS_END_NAMESPACE
 
 QT_CHARTS_USE_NAMESPACE
 
-class BarChart : public BaseChart
+class BarChartWidget : public BaseChartWidget
 {
     Q_OBJECT
 
 public:
-    explicit BarChart(QWidget *parent = 0);
-    ~BarChart() = default;
+    explicit BarChartWidget(QWidget *parent = 0);
+    ~BarChartWidget() = default;
 
 private:
     void onDataChanged() override;

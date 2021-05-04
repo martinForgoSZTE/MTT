@@ -19,7 +19,9 @@ DBModal::DBModal(const QStringList& list, QDialog* parent)
     vlayout->addWidget(comboBox);
     vlayout->addWidget(okButton);
     vlayout->addWidget(cancelButton);
-
+    
+    setLayout(vlayout);
+    this->setMinimumSize(300, 50);
     setModal(true);
 
     connect(okButton, &QPushButton::pressed, this, &DBModal::accept);

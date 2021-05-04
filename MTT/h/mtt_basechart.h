@@ -21,12 +21,12 @@ QT_CHARTS_END_NAMESPACE
 
 QT_CHARTS_USE_NAMESPACE
 
-class BaseChart : public QWidget
+class BaseChartWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit BaseChart(QWidget* parent = nullptr);
-    virtual ~BaseChart() = default;
+    explicit BaseChartWidget(QWidget* parent = nullptr);
+    virtual ~BaseChartWidget() = default;
 
     void SetChartData(const Custom_SQLite_Data_Wrapper& data);
 

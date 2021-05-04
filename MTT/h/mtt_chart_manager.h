@@ -16,15 +16,15 @@ QT_CHARTS_USE_NAMESPACE
 
 class ChartFunctionalFactory
 {
-    QMap<CHART_TYPES, std::function<BaseChart*()>> m_factories;
+    QMap<CHART_TYPES, std::function<BaseChartWidget*()>> m_factories;
 
 public:
     ChartFunctionalFactory()
     {
-        m_factories[CHART_TYPES::PIECHART] = [] { return new CustomPieChart(); };
-        m_factories[CHART_TYPES::BARCHART] = [] { return new BarChart(); };
+        m_factories[CHART_TYPES::PIECHART] = [] { return new PieChartWidget(); };
+        m_factories[CHART_TYPES::BARCHART] = [] { return new BarChartWidget(); };
     }
-    BaseChart* createChart(CHART_TYPES type) { return m_factories[type](); }
+    BaseChartWidget* createChart(CHART_TYPES type) { return m_factories[type](); }
 };
 
 class ChartsManager : public QObject
@@ -37,7 +37,7 @@ public:
 
     void setChart(CHART_TYPES type, const Custom_SQLite_Data_Wrapper& dataWrapper);
     void setData(const Custom_SQLite_Data_Wrapper& dataWrapper);
-    BaseChart* GetChart() const
+    BaseChartWidget* GetChart() const
     {
         return m_pChart;
     }
@@ -59,7 +59,7 @@ private slots:
 
 private:
     //egyszerre egy chart tartozik hozza jelen esetben
-    BaseChart* m_pChart;
+    BaseChartWidget* m_pChart;
     ChartFunctionalFactory m_factory;
     QWidget* m_pParent;
 

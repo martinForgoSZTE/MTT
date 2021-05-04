@@ -20,6 +20,7 @@ set(MTT_HEADERS
 "h/mtt_piechart.h"
 "h/mtt_basechart.h"
 "h/mtt_barchart.h"
+"h/mtt_about.h"
 )
 
 set(MTT_SOURCES
@@ -42,6 +43,11 @@ qt5_add_resources(QT_RESOURCES
 "resources/icons.qrc"
 "resources/pictures.qrc"
 )
+
+if(WIN32)
+set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/resources/images/appicon.rc")
+target_sources(MTT PRIVATE ${APP_ICON_RESOURCE_WINDOWS})
+endif()
 
 target_sources(MTT PRIVATE ${MTT_HEADERS} ${MTT_SOURCES} ${QT_RESOURCES})
 target_include_directories(MTT PRIVATE  ${Qt5Widgets_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/h)

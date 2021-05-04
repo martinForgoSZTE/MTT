@@ -15,19 +15,24 @@ MapWidget::MapWidget(QWidget* parent) noexcept
     m_pScene->addPixmap(QPixmap::fromImage(*m_pImage));
     m_pScene->setSceneRect(m_pImage->rect());
 
-/*    Coordinate coord;
-    coord.map_coord.x = 28;
-    coord.map_coord.y =  348;
-    auto* item = new CircleGraphicsItem(coord);
-    m_pScene->addItem(item);*/
-
     m_pView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     m_pView->setScene(m_pScene);
-    m_pView->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    m_pView->setAlignment(Qt::AlignCenter | Qt::AlignCenter);
 }
 
 
 QGraphicsView* MapWidget::GetGraphicsView() const
 {
     return m_pView;
+}
+
+void MapWidget::AddItemsToScene(const QVector<Coordinate>& coords)
+{
+    auto* scene = GetGraphicsScene();
+    for (auto& coord : coords)
+    {
+        CircleGraphicsItem* circleItem = new CircleGraphicsItem(coord);
+        connect(circleItem, &CircleGraphicsItem::clickedOntoMapPoint, this, &MapWidget::clickedOntoMapPoint);
+        scene->addItem(circleItem);
+    }
 }

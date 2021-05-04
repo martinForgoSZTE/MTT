@@ -1,6 +1,10 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>images/open.png</file>
-    <file>images/save.png</file>
+    <file>images/open_icon.png</file>
+    <file>images/map_icon.png</file>
+	<file>images/db_icon.png</file>
+	<file>images/chart_icon.png</file>
+	<file>images/thesis_icon.png</file>
+	<file>images/table_icon.png</file>
 </qresource>
 </RCC>

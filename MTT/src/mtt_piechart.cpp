@@ -15,8 +15,8 @@
 
 QT_CHARTS_USE_NAMESPACE
 
-CustomPieChart::CustomPieChart(QWidget *parent)
-    : BaseChart(parent), m_series(nullptr), m_slice(nullptr), m_chart(nullptr)
+PieChartWidget::PieChartWidget(QWidget *parent)
+    : BaseChartWidget(parent), m_series(nullptr), m_slice(nullptr), m_chart(nullptr)
 {
     m_themeComboBox = new QComboBox();
     m_themeComboBox->addItem("Qt", QChart::ChartThemeQt);
@@ -29,7 +29,7 @@ CustomPieChart::CustomPieChart(QWidget *parent)
     m_pYearCombo = new QComboBox();
     m_pYearCombo->setPlaceholderText("Select a Year!");
     //it's an overloaded signal, so static_cast is needed with the help of a "pointer to member"
-    connect(m_pYearCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &CustomPieChart::onComboYearChanged);
+    connect(m_pYearCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &PieChartWidget::onComboYearChanged);
 
     QScrollArea *settingsScrollBar = new QScrollArea();
     QWidget *settingsContentWidget = new QWidget();
@@ -42,8 +42,8 @@ CustomPieChart::CustomPieChart(QWidget *parent)
     chartSettings->setLayout(chartSettingsLayout);
 
     connect(m_themeComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            this, &CustomPieChart::updateChartSettings);
-    connect(m_legendCheckBox, &QCheckBox::toggled, this, &CustomPieChart::updateChartSettings);
+            this, &PieChartWidget::updateChartSettings);
+    connect(m_legendCheckBox, &QCheckBox::toggled, this, &PieChartWidget::updateChartSettings);
 
     // slice settings
     m_sliceName = new QLineEdit("<click on a slice>");
@@ -74,18 +74,18 @@ CustomPieChart::CustomPieChart(QWidget *parent)
     QGroupBox *sliceSettings = new QGroupBox("Selected slice");
     sliceSettings->setLayout(sliceSettingsLayout);
 
-    connect(m_sliceLabelVisible, &QCheckBox::toggled, this, &CustomPieChart::updateSliceSettings);
-    connect(m_sliceLabelVisible, &QCheckBox::toggled, this, &CustomPieChart::updateSliceSettings);
+    connect(m_sliceLabelVisible, &QCheckBox::toggled, this, &PieChartWidget::updateSliceSettings);
+    connect(m_sliceLabelVisible, &QCheckBox::toggled, this, &PieChartWidget::updateSliceSettings);
     connect(m_sliceLabelArmFactor,
             static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-            this, &CustomPieChart::updateSliceSettings);
-    connect(m_sliceExploded, &QCheckBox::toggled, this, &CustomPieChart::updateSliceSettings);
+            this, &PieChartWidget::updateSliceSettings);
+    connect(m_sliceExploded, &QCheckBox::toggled, this, &PieChartWidget::updateSliceSettings);
     connect(m_sliceExplodedFactor,
             static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-            this, &CustomPieChart::updateSliceSettings);
+            this, &PieChartWidget::updateSliceSettings);
     connect(m_labelPosition,
             static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            this, &CustomPieChart::updateSliceSettings);
+            this, &PieChartWidget::updateSliceSettings);
 
     m_chartView = new QChartView();
 
@@ -107,7 +107,7 @@ CustomPieChart::CustomPieChart(QWidget *parent)
 }
 
 
-void CustomPieChart::updateChartSettings()
+void PieChartWidget::updateChartSettings()
 {
     QChart::ChartTheme theme = static_cast<QChart::ChartTheme>(m_themeComboBox->itemData(m_themeComboBox->currentIndex()).toInt());
     m_chartView->chart()->setTheme(theme);
@@ -119,7 +119,7 @@ void CustomPieChart::updateChartSettings()
         m_chartView->chart()->legend()->hide();
 }
 
-void CustomPieChart::updateSliceSettings()
+void PieChartWidget::updateSliceSettings()
 {
     if (!m_slice)
         return;
@@ -136,7 +136,7 @@ void CustomPieChart::updateSliceSettings()
     m_slice->setExplodeDistanceFactor(m_sliceExplodedFactor->value());
 }
 
-void CustomPieChart::handleSliceClicked(QPieSlice *slice)
+void PieChartWidget::handleSliceClicked(QPieSlice *slice)
 {
     m_slice = static_cast<CustomSlice*>(slice);
 
@@ -176,7 +176,7 @@ void CustomPieChart::handleSliceClicked(QPieSlice *slice)
     m_sliceExplodedFactor->blockSignals(false);
 }
 
-void CustomPieChart::onDataChanged()
+void PieChartWidget::onDataChanged()
 {
     if(m_data.entries.size())
     {
@@ -187,7 +187,7 @@ void CustomPieChart::onDataChanged()
 
         m_series = new QPieSeries();
         m_series->setLabelsVisible();
-        connect(m_series, &QPieSeries::clicked, this, &CustomPieChart::handleSliceClicked);
+        connect(m_series, &QPieSeries::clicked, this, &PieChartWidget::handleSliceClicked);
 
         for(auto* entry : m_data.entries)
         {
@@ -217,7 +217,7 @@ void CustomPieChart::onDataChanged()
     }
 }
 
-void CustomPieChart::fillYearsCombo()
+void PieChartWidget::fillYearsCombo()
 {
     for(const auto& year : m_data.years)
     {
@@ -225,7 +225,7 @@ void CustomPieChart::fillYearsCombo()
     }
 }
 
-void CustomPieChart::onComboYearChanged(int index)
+void PieChartWidget::onComboYearChanged(int index)
 {
     if(index != -1)
         emit changedYear(m_pYearCombo->itemData(index).toString());

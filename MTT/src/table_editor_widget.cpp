@@ -13,6 +13,10 @@
 #include <QComboBox>
 #include <QDir>
 #include <QSqlDatabase>
+#include <QHeaderView>
+#include <QScrollArea>
+#include <QFormLayout>
+#include <QGroupBox>
 
 
 TableEditor::TableEditor(QWidget *parent)
@@ -25,21 +29,42 @@ TableEditor::TableEditor(QWidget *parent)
       model(nullptr),
       view(nullptr),
       combo(nullptr),
-      mainLayout(nullptr),
-      parent(qobject_cast<MainWindow*>(parent))
+      mainLayout(nullptr)
 {
+    view = new QTableView;
     saveDBButton = new QPushButton(tr("Submit"));
     saveDBButton->setDefault(true);
     revertButton = new QPushButton(tr("&Revert"));
     serializeToDBButton = new QPushButton(tr("Serialize"));
 
-    buttonBox = new QDialogButtonBox(Qt::Vertical);
-    buttonBox->addButton(saveDBButton, QDialogButtonBox::ActionRole);
-    buttonBox->addButton(revertButton, QDialogButtonBox::ActionRole);
-    buttonBox->addButton(serializeToDBButton, QDialogButtonBox::ActionRole);
+    settingsContentWidget = new QWidget();
+
+    settingsLayout = new QFormLayout(settingsContentWidget);
+    settingsLayout->addWidget(saveDBButton);
+    settingsLayout->addWidget(revertButton);
+    settingsLayout->addWidget(serializeToDBButton);
+    QGroupBox* settings = new QGroupBox("Settings");
+    settings->setLayout(settingsLayout);
+
+    QVBoxLayout* scrollLayout = new QVBoxLayout();
+    scrollLayout->addWidget(settings);
+
+    settingsContentWidget->setLayout(scrollLayout);
+    settingsContentWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    QWidget* outmostWidget = new QWidget();
+    vLayout = new QVBoxLayout();
+    vLayout->addWidget(settingsContentWidget);
+    outmostWidget->setLayout(vLayout);
+
+    mainLayout = new QHBoxLayout(this);
+    mainLayout->addWidget(view);
+    mainLayout->addWidget(outmostWidget);
+    setLayout(mainLayout);
 
     connect(saveDBButton, &QPushButton::clicked, this, &TableEditor::onSaveToDB);
-    connect(serializeToDBButton, &QPushButton::clicked, this, &TableEditor::onSerializeToDB);
+    connect(serializeToDBButton, &QPushButton::clicked, this, &TableEditor::serializeToDB);
+    setWindowTitle(tr("Database Cached Table"));
 }
 
 QString TableEditor::getCurrentPureTableName() const
@@ -60,50 +85,33 @@ void TableEditor::onSaveToDB()
     }
 }
 
-void TableEditor::onSerializeToDB()
-{
-    if(parent->SerializeDB())
-    {
-        QMessageBox::information(this, tr("Cached Table"),
-                             tr("Serialize Successful!"));
-    }
-    else
-    {
-        QMessageBox::warning(this, tr("Cached Table"),
-                             tr("The database table(s) already exists permanently OR Something happened!"));
-    }
-}
-
 void TableEditor::SetComboBox(const QString &tableName)
 {
-    if(combo)
+    if(combo && comboSettings)
     {
         RemoveComboBox();
     }
     combo = new QComboBox;
     combo->addItems({tableName + "_Data", tableName + "_Meta"});
-    this->layout()->addWidget(combo);
+    QFormLayout* comboLayout = new QFormLayout(settingsContentWidget);
+    comboLayout->addRow("Select a Table: ", combo);
+    comboSettings = new QGroupBox("Tables");
+    comboSettings->setLayout(comboLayout);
+    comboSettings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    connect(combo, &QComboBox::currentTextChanged, this, &TableEditor::onCurrentTextChanged);
+    vLayout->addWidget(comboSettings);
+
+    connect(combo, &QComboBox::currentTextChanged, this, &TableEditor::currentTableChanged);
 }
 
 void TableEditor::RemoveComboBox()
 {
-    if(combo)
+    if(combo && comboSettings)
     {
-        layout()->removeWidget(combo);
-        disconnect(combo, &QComboBox::currentTextChanged, this, &TableEditor::onCurrentTextChanged);
-        delete combo;
+        vLayout->removeWidget(comboSettings);
+        delete comboSettings;
+        comboSettings = nullptr;
         combo = nullptr;
-    }
-}
-
-void TableEditor::onCurrentTextChanged(const QString& table)
-{
-    if(parent)
-    {
-        SetModelView(parent->m_dbMan.GetStoreDB(), table);
-        SetCustomLayout();
     }
 }
 
@@ -114,36 +122,21 @@ void TableEditor::SetModelView(QSqlDatabase& db, const QString &tableName)
     if(model)
     {
         delete model;
-        disconnect(revertButton, &QPushButton::clicked,  model, &QSqlTableModel::revertAll);
     }
     model = new QSqlTableModel(this, db);
+    connect(revertButton, &QPushButton::clicked, model, &QSqlTableModel::revertAll);
     model->setTable(tableName);
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     bool x = model->select();
 
-    //model->setHeaderData(0, Qt::Horizontal, tr("ID"));
-    //model->setHeaderData(1, Qt::Horizontal, tr("First name"));
-    //model->setHeaderData(2, Qt::Horizontal, tr("Last name"));
+    model->setHeaderData(0, Qt::Horizontal, tr("Area"));
+    model->setHeaderData(1, Qt::Horizontal, tr("Year"));
+    model->setHeaderData(2, Qt::Horizontal, tr("Data"));
 
-    if(view)
-        delete view;
-    view = new QTableView;
     view->setModel(model);
     view->resizeColumnsToContents();
-}
-
-void TableEditor::SetCustomLayout()
-{
-    if(mainLayout)
-        delete mainLayout;
-    mainLayout = new QHBoxLayout(this);
-    mainLayout->addWidget(view);
-    mainLayout->addWidget(buttonBox);
-    if(combo)
-        mainLayout->addWidget(combo);
-    setLayout(mainLayout);
-
-    setWindowTitle(tr("Database Cached Table"));
+    view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    view->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
 

@@ -26,12 +26,12 @@ QT_CHARTS_END_NAMESPACE
 
 QT_CHARTS_USE_NAMESPACE
 
-class CustomPieChart : public BaseChart
+class PieChartWidget : public BaseChartWidget
 {
     Q_OBJECT
 
 public:
-    explicit CustomPieChart(QWidget *parent = nullptr);
+    explicit PieChartWidget(QWidget *parent = nullptr);
 
 private slots:
     void updateChartSettings();

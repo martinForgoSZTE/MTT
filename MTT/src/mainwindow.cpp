@@ -4,6 +4,7 @@
 #include "db_modal_dialog.h"
 #include "circle_graphics_item.h"
 #include "mtt_chart_manager.h"
+#include "mtt_about.h"
 
 #include <QtWidgets>
 #include <QImage>
@@ -16,24 +17,51 @@
 #include <QMessageBox>
 #include <QVector>
 #include <QPalette>
+#include <QMessageBox>
 
 
 MainWindow::MainWindow(DB_Manager& db_manager) noexcept
     : m_dbMan(db_manager), m_pMapWidget(new MapWidget(this)), m_pEditor(nullptr), m_pChartsManager(new ChartsManager(this))
 {
+
+
     m_pStackWidget = new QStackedWidget(this);
     m_pStackWidget->addWidget(m_pMapWidget->GetGraphicsView());
+    m_pEditor = new TableEditor(this);
+    m_pStackWidget->addWidget(m_pEditor);
 
     setCentralWidget(m_pStackWidget);
 
     createActions();
     createStatusBar();
 
-    connect(m_pChartsManager, static_cast<void(ChartsManager::*)(QVector<Coordinate>, const QString&)>(&ChartsManager::requestToSetChartData), this,
-            static_cast<void(MainWindow::*)(const QVector<Coordinate>&, const QString&)>(&MainWindow::responseToSetChartData));
-    connect(m_pChartsManager, static_cast<void(ChartsManager::*)(QVector<Coordinate>, const QString&, const QString&)>(&ChartsManager::requestToSetChartData), this,
-            static_cast<void(MainWindow::*)(const QVector<Coordinate>&, const QString&, const QString&)>(&MainWindow::responseToSetChartData));
+    setUpGlobalConnections();
 
+}
+
+void MainWindow::setUpGlobalConnections()
+{
+    connect(m_pChartsManager, static_cast<void(ChartsManager::*)(QVector<Coordinate>, const QString&)>(&ChartsManager::requestToSetChartData), this,
+        static_cast<void(MainWindow::*)(const QVector<Coordinate>&, const QString&)>(&MainWindow::responseToSetChartData));
+    connect(m_pChartsManager, static_cast<void(ChartsManager::*)(QVector<Coordinate>, const QString&, const QString&)>(&ChartsManager::requestToSetChartData), this,
+        static_cast<void(MainWindow::*)(const QVector<Coordinate>&, const QString&, const QString&)>(&MainWindow::responseToSetChartData));
+
+    connect(m_pEditor, &TableEditor::serializeToDB, this, &MainWindow::onSerializeToDB);
+    connect(m_pEditor, &TableEditor::currentTableChanged, this, &MainWindow::onCurrentTableChanged);
+    connect(m_pMapWidget, &MapWidget::clickedOntoMapPoint, m_pChartsManager, &ChartsManager::onClickedOntoMapPoint);
+}
+
+void MainWindow::tearDownGlobalConnections()
+{
+    //reverse order as connect
+    disconnect(m_pMapWidget, &MapWidget::clickedOntoMapPoint, m_pChartsManager, &ChartsManager::onClickedOntoMapPoint);
+
+    disconnect(m_pEditor, &TableEditor::serializeToDB, this, &MainWindow::onSerializeToDB);
+
+    disconnect(m_pChartsManager, static_cast<void(ChartsManager::*)(QVector<Coordinate>, const QString&, const QString&)>(&ChartsManager::requestToSetChartData), this,
+        static_cast<void(MainWindow::*)(const QVector<Coordinate>&, const QString&, const QString&)>(&MainWindow::responseToSetChartData));
+    disconnect(m_pChartsManager, static_cast<void(ChartsManager::*)(QVector<Coordinate>, const QString&)>(&ChartsManager::requestToSetChartData), this,
+        static_cast<void(MainWindow::*)(const QVector<Coordinate>&, const QString&)>(&MainWindow::responseToSetChartData));
 }
 
 void MainWindow::responseToSetChartData(const QVector<Coordinate>& selectedCoords, const QString& year)
@@ -51,27 +79,23 @@ void MainWindow::responseToSetChartData(const QVector<Coordinate>& selectedCoord
     }
 }
 
+void MainWindow::onCurrentTableChanged(const QString& newTableName)
+{
+    m_pEditor->SetModelView(m_dbMan.GetStoreDB(), newTableName);
+}
+
 void MainWindow::FileOpen()
 {
     QString fileName = QFileDialog::getOpenFileName(this);
     QString tablename;
     if(fileName != "")
     {
+        m_pEditor->RemoveComboBox();
         m_dbMan.SetStoreDB();
-
         tablename = m_dbMan.CreateCustomDB(fileName);
-        if(!m_pEditor)
-        {
-            m_pEditor = new TableEditor( this);
-            m_pStackWidget->insertWidget(m_pStackWidget->count()+1, m_pEditor);
-        }
-        else
-            m_pEditor->RemoveComboBox();
-
         m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tablename + "_Data");
-        m_pEditor->SetCustomLayout();
 
-        AddItemsToScene(m_dbMan.GetMappedCoordinates(tablename + "_Meta"));
+        m_pMapWidget->AddItemsToScene(m_dbMan.GetMappedCoordinates(tablename + "_Meta"));
     }
 }
 
@@ -85,27 +109,24 @@ void MainWindow::DBOpen()
     DBModal* modal = new DBModal(tables);
     if(modal->exec())
     {
-        if(!m_pEditor)
-        {
-            m_pEditor = new TableEditor( this);
-            m_pStackWidget->insertWidget(m_pStackWidget->count()+1, m_pEditor);
-        }
         m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tables[0] + "_Data");
-        m_pEditor->SetCustomLayout();
         m_pEditor->SetComboBox(modal->GetSelectedTable());
 
-        AddItemsToScene(m_dbMan.GetMappedCoordinates(tables[0] + "_Meta"));
+        m_pMapWidget->AddItemsToScene(m_dbMan.GetMappedCoordinates(tables[0] + "_Meta"));
     }
 }
 
-void MainWindow::AddItemsToScene(const QVector<Coordinate>& coords)
+void MainWindow::onSerializeToDB()
 {
-    auto* scene = m_pMapWidget->GetGraphicsScene();
-    for(auto& coord : coords)
+    if (m_dbMan.SerializeDB())
     {
-        CircleGraphicsItem* circleItem = new CircleGraphicsItem(coord);
-        connect(circleItem, &CircleGraphicsItem::clickedOntoMapPoint, m_pChartsManager, &ChartsManager::onClickedOntoMapPoint);
-        scene->addItem(circleItem);
+        QMessageBox::information(this, tr("Cached Table"),
+            tr("Serialize Successful!"));
+    }
+    else
+    {
+        QMessageBox::warning(this, tr("Cached Table"),
+            tr("The database table(s) already exists permanently OR Something happened!"));
     }
 }
 
@@ -117,30 +138,23 @@ void MainWindow::createActions()
     QMenu* subOpenMenu = fileMenu->addMenu(tr("&Open"));
     QMenu *stagesMenu = menuBar()->addMenu(tr("&Views"));
 
-    const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
+    const QIcon openIcon = QIcon(":/images/open_icon.png");
+    const QIcon dbIcon = QIcon(":/images/db_icon.png");
 
     subOpenMenu->setIcon(openIcon);
 
     QAction *fileOpenAct = new QAction(openIcon, tr("&Open file..."), this);
     fileOpenAct->setShortcuts(QKeySequence::Open);
-    fileOpenAct->setStatusTip(tr("Open a STAT file"));
+    fileOpenAct->setStatusTip(tr("Open a .CSV data file"));
     connect(fileOpenAct, &QAction::triggered, this, &MainWindow::FileOpen);
     subOpenMenu->addAction(fileOpenAct);
     fileToolBar->addAction(fileOpenAct);
 
-    QAction *dbOpenAct = new QAction(openIcon, tr("&Open database..."), this);
-    dbOpenAct->setShortcuts(QKeySequence::Open);
-    dbOpenAct->setStatusTip(tr("Open a STAT file"));
+    QAction *dbOpenAct = new QAction(dbIcon, tr("&Open database..."), this);
+    dbOpenAct->setStatusTip(tr("Open a DB file"));
     connect(dbOpenAct, &QAction::triggered, this, &MainWindow::DBOpen);
     subOpenMenu->addAction(dbOpenAct);
-
-    const QIcon saveIcon = QIcon::fromTheme("document-save", QIcon(":/images/save.png"));
-    QAction *saveAct = new QAction(saveIcon, tr("&Save"), this);
-    saveAct->setShortcuts(QKeySequence::Save);
-    saveAct->setStatusTip(tr("Save data into DB"));
-    //connect(saveAct, &QAction::triggered, this, &MainWindow::save);
-    fileMenu->addAction(saveAct);
-    fileToolBar->addAction(saveAct);
+    fileToolBar->addAction(dbOpenAct);
 
     fileMenu->addSeparator();
 
@@ -149,37 +163,43 @@ void MainWindow::createActions()
     exitAct->setShortcuts(QKeySequence::Quit);
     exitAct->setStatusTip(tr("Exit the application"));
 
-    const QIcon mapIcon = QIcon::fromTheme("map");
+    const QIcon mapIcon = QIcon(":/images/map_icon.png");
     QAction *switchToMapAct = new QAction(mapIcon, tr("&Map view"), this);
     switchToMapAct->setStatusTip(tr("Open Map View"));
     connect(switchToMapAct, &QAction::triggered, this, &MainWindow::onSwitchToMap);
     stagesMenu->addAction(switchToMapAct);
+    fileToolBar->addSeparator();
+    fileToolBar->addAction(switchToMapAct);
 
     stagesMenu->addSeparator();
 
-    const QIcon tableIcon = QIcon::fromTheme("table");
+    const QIcon tableIcon = QIcon(":/images/table_icon.png");
     QAction *switchToTableAct = new QAction(tableIcon, tr("&Table view"), this);
     switchToTableAct->setStatusTip(tr("Open selected database table"));
     connect(switchToTableAct, &QAction::triggered, this, &MainWindow::onSwitchToTable);
     stagesMenu->addAction(switchToTableAct);
+    fileToolBar->addAction(switchToTableAct);
 
     stagesMenu->addSeparator();
 
-    const QIcon chartsIcon = QIcon::fromTheme("chart");
+    const QIcon chartsIcon = QIcon(":/images/chart_icon.png");
     QAction *switchToChartsAct = new QAction(chartsIcon, tr("&Charts View"), this);
     switchToChartsAct->setStatusTip(tr("Open Charts view"));
     connect(switchToChartsAct, &QAction::triggered, this, &MainWindow::onSwitchToCharts);
     stagesMenu->addAction(switchToChartsAct);
+    fileToolBar->addAction(switchToChartsAct);
 
 
-
-    /*QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-    QAction *aboutAct = helpMenu->addAction(tr("&About"), this, &MainWindow::about);
-    aboutAct->setStatusTip(tr("Show the application's About box"));
-
-
-    QAction *aboutQtAct = helpMenu->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
-    aboutQtAct->setStatusTip(tr("Show the Qt library's About box"));*/
+    const QIcon aboutIcon = QIcon::fromTheme("about");
+    QMenu *aboutMenu = menuBar()->addMenu(tr("&About"));
+    QAction *aboutThesis = new QAction(aboutIcon, tr("About my &Thesis"), this);
+    aboutThesis->setStatusTip(tr("Show the Thesis description it's Application is about"));
+    QAction *aboutLic = new QAction(aboutIcon, tr("&License Type"), this);
+    aboutLic->setStatusTip(tr("Show the Licence Type and Terms"));
+    connect(aboutThesis, &QAction::triggered, this, &MainWindow::onAboutThesis);
+    connect(aboutLic, &QAction::triggered, this, &MainWindow::onAboutLicense);
+    aboutMenu->addAction(aboutThesis);
+    aboutMenu->addAction(aboutLic);
 
     QWidget* empty = new QWidget();
     empty->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -199,7 +219,17 @@ void MainWindow::createActions()
 
 MainWindow::~MainWindow()
 {
-    //TODO disconnects, connecting obj into data members
+    tearDownGlobalConnections();
+}
+
+void MainWindow::onAboutThesis()
+{
+    QMessageBox::about(this, "About My Thesis", About::AboutThesis);
+}
+
+void MainWindow::onAboutLicense()
+{
+    QMessageBox::about(this, "About License", About::ABoutLicense);
 }
 
 void MainWindow::onSwitchToMap()
@@ -257,31 +287,3 @@ void MainWindow::createStatusBar()
 {
     statusBar()->showMessage(tr("Ready"));
 }
-
-
-/*void MainWindow::newFile()
-{
-    if (maybeSave()) {
-        textEdit->clear();
-        setCurrentFile(QString());
-    }
-}
-
-bool MainWindow::save()
-{
-    if (curFile.isEmpty()) {
-        return saveAs();
-    } else {
-        return saveFile(curFile);
-    }
-}
-
-bool MainWindow::saveAs()
-{
-    QFileDialog dialog(this);
-    dialog.setWindowModality(Qt::WindowModal);
-    dialog.setAcceptMode(QFileDialog::AcceptSave);
-    if (dialog.exec() != QDialog::Accepted)
-        return false;
-    return saveFile(dialog.selectedFiles().first());
-}*/

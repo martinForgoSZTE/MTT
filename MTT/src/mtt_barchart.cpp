@@ -31,8 +31,8 @@
 
 QT_CHARTS_USE_NAMESPACE
 
-BarChart::BarChart(QWidget *parent)
-    : BaseChart(parent)
+BarChartWidget::BarChartWidget(QWidget *parent)
+    : BaseChartWidget(parent)
 {
     m_pYearCombo = new QComboBox();
     m_pYearCombo->setPlaceholderText("Select a Year!");
@@ -42,9 +42,9 @@ BarChart::BarChart(QWidget *parent)
     m_pEndInterval->setPlaceholderText("Select the end Year!");
 
     //it's an overloaded signal, so static_cast is needed with the help of a "pointer to member"
-    connect(m_pYearCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &BarChart::onComboYearChanged);
-    connect(m_pStartInterval, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &BarChart::onComboStartIntervalChanged);
-    connect(m_pEndInterval, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &BarChart::onComboEndIntervalChanged);
+    connect(m_pYearCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &BarChartWidget::onComboYearChanged);
+    connect(m_pStartInterval, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &BarChartWidget::onComboStartIntervalChanged);
+    connect(m_pEndInterval, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &BarChartWidget::onComboEndIntervalChanged);
 
     QScrollArea *settingsScrollBar = new QScrollArea();
     QWidget *settingsContentWidget = new QWidget();
@@ -77,8 +77,8 @@ BarChart::BarChart(QWidget *parent)
     m_BarSetIndexVal->setReadOnly(true);
 
     connect(m_themeComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            this, &BarChart::updateChartSettings);
-    connect(m_legendCheckBox, &QCheckBox::toggled, this, &BarChart::updateChartSettings);
+            this, &BarChartWidget::updateChartSettings);
+    connect(m_legendCheckBox, &QCheckBox::toggled, this, &BarChartWidget::updateChartSettings);
 
     QFormLayout* chartSettingsLayout = new QFormLayout(settingsContentWidget);
     chartSettingsLayout->addRow("Theme: ", m_themeComboBox);
@@ -104,7 +104,6 @@ BarChart::BarChart(QWidget *parent)
     ///////////////////////////////////////////////
 
     m_chartView = new QChartView();
-    m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setMinimumSize(640, 480);
 
     QGridLayout *mainLayout = new QGridLayout;
@@ -118,7 +117,7 @@ BarChart::BarChart(QWidget *parent)
     setWindowTheme(static_cast<QChart::ChartTheme>(m_themeComboBox->currentData().toInt()));
 }
 
-void BarChart::updateChartSettings()
+void BarChartWidget::updateChartSettings()
 {
     QChart::ChartTheme theme = static_cast<QChart::ChartTheme>(m_themeComboBox->currentData().toInt());
     m_chartView->chart()->setTheme(theme);
@@ -130,7 +129,7 @@ void BarChart::updateChartSettings()
         m_chartView->chart()->legend()->hide();
 }
 
-void BarChart::onDataChanged()
+void BarChartWidget::onDataChanged()
 {
     if(!m_data.entries.size())
     {
@@ -138,7 +137,7 @@ void BarChart::onDataChanged()
         return;
     }
     m_series = new QBarSeries;
-    connect(m_series, &QBarSeries::clicked, this, &BarChart::handleBarClicked);
+    connect(m_series, &QBarSeries::clicked, this, &BarChartWidget::handleBarClicked);
     m_chart = new QChart;
     m_chart->setTitle("Barchart: " + m_data.tableName);
     m_chart->setAnimationOptions(QChart::AllAnimations);
@@ -210,7 +209,7 @@ void BarChart::onDataChanged()
     fillYearsCombo();
 }
 
-void BarChart::fillYearsCombo()
+void BarChartWidget::fillYearsCombo()
 {
     m_pYearCombo->clear();
     m_pStartInterval->clear();
@@ -222,7 +221,7 @@ void BarChart::fillYearsCombo()
     }
 }
 
-void BarChart::onComboYearChanged(int idx)
+void BarChartWidget::onComboYearChanged(int idx)
 {
     if(idx != -1)
     {
@@ -236,7 +235,7 @@ void BarChart::onComboYearChanged(int idx)
     }
 }
 
-void BarChart::onComboStartIntervalChanged(int)
+void BarChartWidget::onComboStartIntervalChanged(int)
 {
     m_pYearCombo->blockSignals(true);
     m_pYearCombo->setCurrentIndex(-1);
@@ -248,7 +247,7 @@ void BarChart::onComboStartIntervalChanged(int)
     }
 }
 
-void BarChart::onComboEndIntervalChanged(int)
+void BarChartWidget::onComboEndIntervalChanged(int)
 {
     if(m_pStartInterval->currentIndex() == -1)
     {
@@ -259,7 +258,7 @@ void BarChart::onComboEndIntervalChanged(int)
     emit changedYear(m_pStartInterval->currentData().toString(), m_pEndInterval->currentData().toString());
 }
 
-void BarChart::handleBarClicked(int index, QBarSet* barset)
+void BarChartWidget::handleBarClicked(int index, QBarSet* barset)
 {
     m_BarSetName->setText(barset->label());
     m_BarSetIndexVal->setValue(barset->at(index));

@@ -15,8 +15,8 @@ void ChartsManager::setChart(CHART_TYPES type, const Custom_SQLite_Data_Wrapper&
     m_pChart->SetChartData(dataWrapper);
 
     //a delete m_pChart miatt fentebb, nem kell disconnect az előzőre
-    connect(m_pChart, static_cast<void(BaseChart::*)(const QString&)>(&BaseChart::changedYear), this, static_cast<void(ChartsManager::*)(const QString&)>(&ChartsManager::onChangedYear));
-    connect(m_pChart, static_cast<void(BaseChart::*)(const QString&, const QString&)>(&BaseChart::changedYear), this, static_cast<void(ChartsManager::*)(const QString&, const QString&)>(&ChartsManager::onChangedYear));
+    connect(m_pChart, static_cast<void(BaseChartWidget::*)(const QString&)>(&BaseChartWidget::changedYear), this, static_cast<void(ChartsManager::*)(const QString&)>(&ChartsManager::onChangedYear));
+    connect(m_pChart, static_cast<void(BaseChartWidget::*)(const QString&, const QString&)>(&BaseChartWidget::changedYear), this, static_cast<void(ChartsManager::*)(const QString&, const QString&)>(&ChartsManager::onChangedYear));
 }
 
 void ChartsManager::setData(const Custom_SQLite_Data_Wrapper& dataWrapper)

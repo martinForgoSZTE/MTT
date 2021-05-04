@@ -13,13 +13,12 @@ class QMenu;
 class QStackedWidget;
 class ChartsManager;
 class QComboBox;
+class QTextEdit;
 
 class MapWidget;
 
 class MainWindow : public QMainWindow
 {
-    //TODO signal - slot?
-    friend void TableEditor::onCurrentTextChanged(const QString&);
     Q_OBJECT
 
 public:
@@ -31,29 +30,9 @@ public:
     MainWindow(MainWindow&&) = delete;
     MainWindow& operator=(MainWindow&&) = delete;
 
-    bool SerializeDB() const
-    {
-        return m_dbMan.SerializeDB();
-    }
-
-/*    void loadFile(const QString &fileName);
-
-protected:
-    void closeEvent(QCloseEvent *event) override;
-
 private slots:
-    void newFile();
-    void about();
-
-private:
-    void readSettings();
-    void writeSettings();
-    bool maybeSave();
-    bool saveFile(const QString &fileName);
-    void setCurrentFile(const QString &fileName);
-    QString strippedName(const QString &fullFileName);*/
-
-private slots:
+    void onAboutThesis();
+    void onAboutLicense();
     void FileOpen();
     void DBOpen();
     void onSwitchToMap();
@@ -61,12 +40,14 @@ private slots:
     void onSwitchToCharts();
     void responseToSetChartData(const QVector<Coordinate>& selectedCoords, const QString& year);
     void responseToSetChartData(const QVector<Coordinate>& selectedCoords, const QString& startInterval, const QString& endInterval);
-    //bool save();
+    void onSerializeToDB();
+    void onCurrentTableChanged(const QString& newTableName);
 
 private:
+    void setUpGlobalConnections();
+    void tearDownGlobalConnections();
     void createActions();
     void createStatusBar();
-    void AddItemsToScene(const QVector<Coordinate>& coords);
 
     QString m_curFile;
     DB_Manager& m_dbMan;

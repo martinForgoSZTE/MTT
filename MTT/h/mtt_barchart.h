@@ -3,9 +3,13 @@
 #include "mtt_basechart.h"
 
 #include <QtCharts/QChartGlobal>
+#include <QBarSet>
 
 class QSqlTableModel;
 class QComboBox;
+class QCheckBox;
+class QDoubleSpinBox;
+class QLineEdit;
 
 QT_CHARTS_BEGIN_NAMESPACE
 class QChartView;
@@ -31,6 +35,8 @@ private slots:
     void onComboYearChanged(int);
     void onComboStartIntervalChanged(int);
     void onComboEndIntervalChanged(int);
+    void updateChartSettings();
+    void handleBarClicked(int index, QBarSet* barset);
 
 private:
     QChart* m_chart;
@@ -38,7 +44,12 @@ private:
     QComboBox* m_pYearCombo;
     QComboBox* m_pStartInterval;
     QComboBox* m_pEndInterval;
+    QComboBox* m_themeComboBox;
+    QCheckBox* m_legendCheckBox;
+    QDoubleSpinBox* m_BarSetIndexVal;
+    QLineEdit* m_BarSetName;
 
     QBarSeries* m_series;
     QChartView* m_chartView;
 };
+

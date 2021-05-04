@@ -23,6 +23,9 @@
 #include <QSet>
 #include <QVector>
 #include <QDebug>
+#include <QCheckBox>
+#include <QLineEdit>
+#include <QDoubleSpinBox>
 
 #include <algorithm>
 
@@ -51,19 +54,54 @@ BarChart::BarChart(QWidget *parent)
     QGroupBox *yearSettings = new QGroupBox("Custom Year");
     yearSettings->setLayout(yearSettingsLayout);
 
+    ///////////////////////////////////////////////
+
     QFormLayout *yearIntervalSettingsLayout = new QFormLayout(settingsContentWidget);
     yearIntervalSettingsLayout->addRow("Start Year: ", m_pStartInterval);
     yearIntervalSettingsLayout->addRow("End Year: ", m_pEndInterval);
     QGroupBox *yearIntervalSettings = new QGroupBox("Custom Interval");
     yearIntervalSettings->setLayout(yearIntervalSettingsLayout);
 
+    ///////////////////////////////////////////////
+
+    m_legendCheckBox = new QCheckBox();
+    m_themeComboBox = new QComboBox();
+    m_themeComboBox->addItem("Qt", QChart::ChartThemeQt);
+    m_themeComboBox->addItem("Light", QChart::ChartThemeLight);
+    m_themeComboBox->addItem("Dark", QChart::ChartThemeDark);
+    m_themeComboBox->addItem("High Contrast", QChart::ChartThemeHighContrast);
+    m_BarSetName = new QLineEdit("<Click on a Bar>");
+    m_BarSetName->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    m_BarSetName->setReadOnly(true);
+    m_BarSetIndexVal = new QDoubleSpinBox();
+    m_BarSetIndexVal->setReadOnly(true);
+
+    connect(m_themeComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &BarChart::updateChartSettings);
+    connect(m_legendCheckBox, &QCheckBox::toggled, this, &BarChart::updateChartSettings);
+
+    QFormLayout* chartSettingsLayout = new QFormLayout(settingsContentWidget);
+    chartSettingsLayout->addRow("Theme: ", m_themeComboBox);
+    chartSettingsLayout->addRow("Legend: ", m_legendCheckBox);
+    chartSettingsLayout->addRow("Barset name: ", m_BarSetName);
+    chartSettingsLayout->addRow("Bar value: ", m_BarSetIndexVal);
+    QGroupBox* chartSettings = new QGroupBox("Chart");
+    chartSettings->setLayout(chartSettingsLayout);
+
+    ///////////////////////////////////////////////
+
     QVBoxLayout *settingsLayout = new QVBoxLayout();
+    settingsLayout->addWidget(chartSettings);
     settingsLayout->addWidget(yearSettings);
     settingsLayout->addWidget(yearIntervalSettings);
+
+    ///////////////////////////////////////////////
 
     settingsContentWidget->setLayout(settingsLayout);
     settingsScrollBar->setWidget(settingsContentWidget);
     settingsScrollBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    ///////////////////////////////////////////////
 
     m_chartView = new QChartView();
     m_chartView->setRenderHint(QPainter::Antialiasing);
@@ -73,7 +111,23 @@ BarChart::BarChart(QWidget *parent)
     mainLayout->addWidget(m_chartView, 1, 0);
     mainLayout->addWidget(settingsScrollBar, 1, 1);
 
+    ///////////////////////////////////////////////
+
     setLayout(mainLayout);
+    updateChartSettings();
+    setWindowTheme(static_cast<QChart::ChartTheme>(m_themeComboBox->currentData().toInt()));
+}
+
+void BarChart::updateChartSettings()
+{
+    QChart::ChartTheme theme = static_cast<QChart::ChartTheme>(m_themeComboBox->currentData().toInt());
+    m_chartView->chart()->setTheme(theme);
+    setWindowTheme(theme);
+
+    if (m_legendCheckBox->checkState() == Qt::Checked)
+        m_chartView->chart()->legend()->show();
+    else
+        m_chartView->chart()->legend()->hide();
 }
 
 void BarChart::onDataChanged()
@@ -84,6 +138,7 @@ void BarChart::onDataChanged()
         return;
     }
     m_series = new QBarSeries;
+    connect(m_series, &QBarSeries::clicked, this, &BarChart::handleBarClicked);
     m_chart = new QChart;
     m_chart->setTitle("Barchart: " + m_data.tableName);
     m_chart->setAnimationOptions(QChart::AllAnimations);
@@ -203,3 +258,10 @@ void BarChart::onComboEndIntervalChanged(int)
 
     emit changedYear(m_pStartInterval->currentData().toString(), m_pEndInterval->currentData().toString());
 }
+
+void BarChart::handleBarClicked(int index, QBarSet* barset)
+{
+    m_BarSetName->setText(barset->label());
+    m_BarSetIndexVal->setValue(barset->at(index));
+}
+

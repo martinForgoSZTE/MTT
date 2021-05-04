@@ -3,6 +3,10 @@
 #include "db_entry.h"
 #include <QWidget>
 #include <QVector>
+#include <QtCharts/QChartGlobal>
+#include <QChart>
+
+
 
 enum CHART_TYPES : int
 {
@@ -11,19 +15,20 @@ enum CHART_TYPES : int
     BARCHART = 1,
 };
 
+QT_CHARTS_BEGIN_NAMESPACE
+class QChart;
+QT_CHARTS_END_NAMESPACE
+
+QT_CHARTS_USE_NAMESPACE
 
 class BaseChart : public QWidget
 {
     Q_OBJECT
 public:
-    explicit BaseChart(QWidget* parent = nullptr) : QWidget(parent){}
+    explicit BaseChart(QWidget* parent = nullptr);
     virtual ~BaseChart() = default;
 
-    void SetChartData(const Custom_SQLite_Data_Wrapper& data)
-    {
-        m_data = data;
-        onDataChanged();
-    }
+    void SetChartData(const Custom_SQLite_Data_Wrapper& data);
 
 signals:
     void changedYear(const QString& newYear);
@@ -32,6 +37,6 @@ signals:
 protected:
     Custom_SQLite_Data_Wrapper m_data;
 
-private:
     virtual void onDataChanged() = 0;
+    void setWindowTheme(QChart::ChartTheme);
 };

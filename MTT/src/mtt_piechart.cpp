@@ -48,8 +48,9 @@ CustomPieChart::CustomPieChart(QWidget *parent)
     // slice settings
     m_sliceName = new QLineEdit("<click on a slice>");
     m_sliceName->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    m_sliceName->setReadOnly(true);
     m_sliceValue = new QDoubleSpinBox();
-    m_sliceValue->setMaximum(1000);
+    m_sliceValue->setReadOnly(true);
     m_sliceLabelVisible = new QCheckBox();
     m_sliceLabelArmFactor = new QDoubleSpinBox();
     m_sliceLabelArmFactor->setSingleStep(0.01);
@@ -73,10 +74,6 @@ CustomPieChart::CustomPieChart(QWidget *parent)
     QGroupBox *sliceSettings = new QGroupBox("Selected slice");
     sliceSettings->setLayout(sliceSettingsLayout);
 
-    connect(m_sliceName, &QLineEdit::textChanged, this, &CustomPieChart::updateSliceSettings);
-    connect(m_sliceValue,
-            static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-            this, &CustomPieChart::updateSliceSettings);
     connect(m_sliceLabelVisible, &QCheckBox::toggled, this, &CustomPieChart::updateSliceSettings);
     connect(m_sliceLabelVisible, &QCheckBox::toggled, this, &CustomPieChart::updateSliceSettings);
     connect(m_sliceLabelArmFactor,
@@ -105,6 +102,7 @@ CustomPieChart::CustomPieChart(QWidget *parent)
     baseLayout->addWidget(m_chartView, 0, 1);
     setLayout(baseLayout);
 
+    setWindowTheme(static_cast<QChart::ChartTheme>(m_themeComboBox->currentData().toInt()));
     updateChartSettings();
 }
 
@@ -113,6 +111,7 @@ void CustomPieChart::updateChartSettings()
 {
     QChart::ChartTheme theme = static_cast<QChart::ChartTheme>(m_themeComboBox->itemData(m_themeComboBox->currentIndex()).toInt());
     m_chartView->chart()->setTheme(theme);
+    setWindowTheme(theme);
 
     if (m_legendCheckBox->checkState() == Qt::Checked)
         m_chartView->chart()->legend()->show();

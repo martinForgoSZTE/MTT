@@ -73,7 +73,7 @@ BarChartWidget::BarChartWidget(QWidget *parent)
     m_BarSetName = new QLineEdit("<Click on a Bar>");
     m_BarSetName->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
     m_BarSetName->setReadOnly(true);
-    m_BarSetIndexVal = new QDoubleSpinBox();
+    m_BarSetIndexVal = new QLineEdit();
     m_BarSetIndexVal->setReadOnly(true);
 
     connect(m_themeComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
@@ -184,7 +184,8 @@ void BarChartWidget::onDataChanged()
         {
            barsetValues.append(record->data.toDouble());
         }
-        barset->append(barsetValues);
+        if(barset != nullptr)
+            barset->append(barsetValues);
     }
 
     m_chart->addSeries(m_series);
@@ -261,6 +262,6 @@ void BarChartWidget::onComboEndIntervalChanged(int)
 void BarChartWidget::handleBarClicked(int index, QBarSet* barset)
 {
     m_BarSetName->setText(barset->label());
-    m_BarSetIndexVal->setValue(barset->at(index));
+    m_BarSetIndexVal->setText(QString::number(barset->at(index)));
 }
 

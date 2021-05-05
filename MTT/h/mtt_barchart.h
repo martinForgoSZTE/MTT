@@ -46,7 +46,7 @@ private:
     QComboBox* m_pEndInterval;
     QComboBox* m_themeComboBox;
     QCheckBox* m_legendCheckBox;
-    QDoubleSpinBox* m_BarSetIndexVal;
+    QLineEdit* m_BarSetIndexVal;
     QLineEdit* m_BarSetName;
 
     QBarSeries* m_series;

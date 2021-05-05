@@ -96,6 +96,7 @@ void MainWindow::FileOpen()
         m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tablename + "_Data");
 
         m_pMapWidget->AddItemsToScene(m_dbMan.GetMappedCoordinates(tablename + "_Meta"));
+        m_pStackWidget->setCurrentWidget(m_pMapWidget->GetGraphicsView());
     }
 }
 
@@ -109,10 +110,11 @@ void MainWindow::DBOpen()
     DBModal* modal = new DBModal(tables);
     if(modal->exec())
     {
-        m_pEditor->SetModelView(m_dbMan.GetStoreDB() , tables[0] + "_Data");
+        m_pEditor->SetModelView(m_dbMan.GetStoreDB() , modal->GetSelectedTable() + "_Data");
         m_pEditor->SetComboBox(modal->GetSelectedTable());
 
-        m_pMapWidget->AddItemsToScene(m_dbMan.GetMappedCoordinates(tables[0] + "_Meta"));
+        m_pMapWidget->AddItemsToScene(m_dbMan.GetMappedCoordinates(modal->GetSelectedTable() + "_Meta"));
+        m_pStackWidget->setCurrentWidget(m_pMapWidget->GetGraphicsView());
     }
 }
 

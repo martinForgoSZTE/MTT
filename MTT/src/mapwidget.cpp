@@ -28,11 +28,12 @@ QGraphicsView* MapWidget::GetGraphicsView() const
 
 void MapWidget::AddItemsToScene(const QVector<Coordinate>& coords)
 {
-    auto* scene = GetGraphicsScene();
+    m_pScene->clear();
+    m_pScene->addPixmap(QPixmap::fromImage(*m_pImage));
     for (auto& coord : coords)
     {
         CircleGraphicsItem* circleItem = new CircleGraphicsItem(coord);
         connect(circleItem, &CircleGraphicsItem::clickedOntoMapPoint, this, &MapWidget::clickedOntoMapPoint);
-        scene->addItem(circleItem);
+        m_pScene->addItem(circleItem);
     }
 }

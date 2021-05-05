@@ -34,7 +34,7 @@ void CircleGraphicsItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     }
     else
     {
-        QPen pen(Qt::blue, 3);
+        QPen pen(m_coord.color, 3);
         painter->setPen(pen);
     }
     painter->drawEllipse(rect);

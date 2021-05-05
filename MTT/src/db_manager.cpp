@@ -73,12 +73,13 @@ QVector<Coordinate> DB_Manager::GetGeoCoordinatesFromTable(const QString& tableN
                 "SELECT " + tableName + ".area_name, " + commonTable + ".longitude, " + commonTable + ".latitude FROM " +
                 tableName + ", " + commonTable + " WHERE " + tableName + ".area_name=" + commonTable + ".name";
 
-        q_attach.exec(queryString);
-        qDebug() << q_attach.lastError().text();
+        if(!q_attach.exec(queryString))
+            qDebug() << q_attach.lastError().text();
         while(q_attach.next())
         {
            Coordinate coord;
            coord.area = q_attach.value(0).toString();
+           coord.color = GetBrushToArea(coord.area, tableName.split("_")[0]+"_Meta");
            coord.geo_coord.longitude = q_attach.value(1).toDouble();
            coord.geo_coord.latitude = q_attach.value(2).toDouble();
            coords.append(coord);
@@ -86,6 +87,27 @@ QVector<Coordinate> DB_Manager::GetGeoCoordinatesFromTable(const QString& tableN
     }
 
     return coords;
+}
+
+QBrush DB_Manager::GetBrushToArea(const QString& area, const QString& table)
+{
+    QBrush ret = Qt::darkGray;;
+    QSqlQuery query(m_StoreDB);
+    QString queryString = "SELECT capital, county, region, large_region FROM " + table + " WHERE area_name = '" + area + "'";
+    query.exec(queryString);
+    if (query.next())
+    {
+        if (query.value("capital") == 1)
+            ret = Qt::magenta;
+        else if (query.value("county") == 1)
+            ret = Qt::green;
+        else if (query.value("region") == 1)
+            ret = Qt::blue;
+        else if (query.value("large_region") == 1)
+            ret = Qt::cyan;
+    }
+
+    return ret;
 }
 
 
@@ -352,7 +374,7 @@ DB_Manager::DB_Manager(const QString& driver)
      return rList;
  }
 
- // only in memory tables are serialized
+ // only in-memory tables are serialized
  bool DB_Manager::SerializeDB()
  {
      bool rbSucc = true;

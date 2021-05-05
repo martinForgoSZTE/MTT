@@ -52,7 +52,7 @@ private:
     QDoubleSpinBox *m_holeSize;
 
     QLineEdit *m_sliceName;
-    QDoubleSpinBox *m_sliceValue;
+    QLineEdit *m_sliceValue;
     QCheckBox *m_sliceLabelVisible;
     QDoubleSpinBox *m_sliceLabelArmFactor;
     QCheckBox *m_sliceExploded;

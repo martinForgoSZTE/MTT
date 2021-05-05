@@ -129,9 +129,9 @@ void TableEditor::SetModelView(QSqlDatabase& db, const QString &tableName)
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     bool x = model->select();
 
-    model->setHeaderData(0, Qt::Horizontal, tr("Area"));
+    /*model->setHeaderData(0, Qt::Horizontal, tr("Area"));
     model->setHeaderData(1, Qt::Horizontal, tr("Year"));
-    model->setHeaderData(2, Qt::Horizontal, tr("Data"));
+    model->setHeaderData(2, Qt::Horizontal, tr("Data"));*/
 
     view->setModel(model);
     view->resizeColumnsToContents();

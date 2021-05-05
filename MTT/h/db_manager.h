@@ -6,6 +6,7 @@
 #include <QVariant>
 #include <QStringList>
 #include <QVector>
+#include <QBrush>
 
 #include "mtt_utility.h"
 #include "mtt_Coordinate.h"
@@ -45,6 +46,7 @@ private:
     int GetSizeOfResultSet(QSqlDatabase&, QSqlQuery&);
 
     QVector<Coordinate> GetGeoCoordinatesFromTable(const QString& tableName);
+    QBrush GetBrushToArea(const QString& area, const QString& table);
     void MapEndPositions(QVector<Coordinate>& coords);
     void MapGeoCoordinates(QVector<Coordinate>& coords);
 

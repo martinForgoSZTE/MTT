@@ -39,12 +39,16 @@ Custom_SQLite_Data_Wrapper File_Manager::parse(QString fileName)
 {
     Custom_SQLite_Data_Wrapper wrapper;
     auto& entries = wrapper.entries;
+    auto simplyfyChunks = [](QStringList& chunks) -> void { std::transform(chunks.begin(), chunks.end(), chunks.begin(),
+        [](QString& chunk) { return chunk.simplified(); });
+    };
     m_InputFile.setFileName(fileName );
     if(m_InputFile.open(QIODevice::ReadOnly))
     {
         QTextStream ts(&m_InputFile);
         if(false == CheckEncodingIsUTF8(ts))
         {
+            qDebug() << "Input file encoding is not UTF-8";
             return wrapper;
         }
 
@@ -52,7 +56,7 @@ Custom_SQLite_Data_Wrapper File_Manager::parse(QString fileName)
         std::size_t pos = 1;
         bool eof = false;
 
-        while(!ts.atEnd() && !eof)
+        while(!eof)
         {
             QString line = ts.readLine();
             switch(pos)
@@ -67,6 +71,7 @@ Custom_SQLite_Data_Wrapper File_Manager::parse(QString fileName)
                 case 2:
                 {
                     auto chunks = line.split(";;");
+                    simplyfyChunks(chunks);
                     auto years = chunks[1].split(';');
                     wrapper.FillYears(years);
                     pos++;
@@ -79,19 +84,13 @@ Custom_SQLite_Data_Wrapper File_Manager::parse(QString fileName)
                 }
                 default:
                 {
-                    if(pos <= 32)   //TODO: nem jó explicit szám mert mi van ha csak régió
+                    if(line != "END")
                     {
-                        if(line.at(0) == '$')
-                        {
-                            pos--;
-                            auto chunks = line.split(';');
-                            auto data = chunks[0].split(',');
-                            wrapper.verticalText = data[1];
-                        }
-                        else
+                        if(line.size() > 0)
                         {
                             DB_Entry* entry = new DB_Entry;
                             auto fields = line.split(";");
+                            simplyfyChunks(fields);
                             std::size_t endYear = wrapper.years.size();
                             std::size_t startYear = wrapper.years[0];
                             std::size_t yearCounter = startYear;

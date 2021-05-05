@@ -49,7 +49,7 @@ PieChartWidget::PieChartWidget(QWidget *parent)
     m_sliceName = new QLineEdit("<click on a slice>");
     m_sliceName->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
     m_sliceName->setReadOnly(true);
-    m_sliceValue = new QDoubleSpinBox();
+    m_sliceValue = new QLineEdit();
     m_sliceValue->setReadOnly(true);
     m_sliceLabelVisible = new QCheckBox();
     m_sliceLabelArmFactor = new QDoubleSpinBox();
@@ -126,7 +126,7 @@ void PieChartWidget::updateSliceSettings()
 
     m_slice->setLabel(m_sliceName->text());
 
-    m_slice->setValue(m_sliceValue->value());
+    m_slice->setValue(m_sliceValue->text().toDouble());
 
     m_slice->setLabelVisible(m_sliceLabelVisible->isChecked());
     m_slice->setLabelArmLengthFactor(m_sliceLabelArmFactor->value());
@@ -147,7 +147,7 @@ void PieChartWidget::handleSliceClicked(QPieSlice *slice)
 
     // value changed signal
     m_sliceValue->blockSignals(true);
-    m_sliceValue->setValue(slice->value());
+    m_sliceValue->setText(QString::number(slice->value()));
     m_sliceValue->blockSignals(false);
 
     //toggled signal

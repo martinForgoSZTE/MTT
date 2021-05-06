@@ -1,8 +1,11 @@
 cmake_minimum_required (VERSION 3.8)
 
-project("MTT")
+project("Thesis_Program")
+
+
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
@@ -16,7 +19,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5Charts REQUIRED)
+find_package(Qt5 COMPONENTS Sql Widgets Charts REQUIRED)
 
 add_subdirectory("MTT")

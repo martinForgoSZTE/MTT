@@ -1,7 +1,6 @@
 #include "db_manager.h"
 #include "file_manager.h"
 #include "db_entry.h"
-#include "entry_position.h"
 #include "constants.h"
 
 #include <QSqlQuery>

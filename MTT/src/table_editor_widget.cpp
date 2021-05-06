@@ -1,5 +1,4 @@
 #include "table_editor_widget.h"
-#include "mainwindow.h"
 
 #include <QPushButton>
 #include <QDialogButtonBox>

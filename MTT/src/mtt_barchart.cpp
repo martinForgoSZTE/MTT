@@ -207,6 +207,7 @@ void BarChartWidget::onDataChanged()
     if(prev != nullptr)
         delete prev;
 
+    updateChartSettings();
     fillYearsCombo();
 }
 

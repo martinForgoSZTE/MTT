@@ -128,9 +128,20 @@ void TableEditor::SetModelView(QSqlDatabase& db, const QString &tableName)
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     bool x = model->select();
 
-    /*model->setHeaderData(0, Qt::Horizontal, tr("Area"));
-    model->setHeaderData(1, Qt::Horizontal, tr("Year"));
-    model->setHeaderData(2, Qt::Horizontal, tr("Data"));*/
+    if (tableName.split("_")[1] == "Data")
+    {
+        model->setHeaderData(0, Qt::Horizontal, tr("Area"));
+        model->setHeaderData(1, Qt::Horizontal, tr("Year"));
+        model->setHeaderData(2, Qt::Horizontal, tr("Data"));
+    }
+    else if (tableName.split("_")[1] == "Meta")
+    {
+        model->setHeaderData(0, Qt::Horizontal, tr("Area"));
+        model->setHeaderData(1, Qt::Horizontal, tr("Capital"));
+        model->setHeaderData(2, Qt::Horizontal, tr("County"));
+        model->setHeaderData(3, Qt::Horizontal, tr("Region"));
+        model->setHeaderData(4, Qt::Horizontal, tr("Large Region"));
+    }
 
     view->setModel(model);
     view->resizeColumnsToContents();

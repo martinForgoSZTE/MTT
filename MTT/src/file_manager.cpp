@@ -64,7 +64,8 @@ Custom_SQLite_Data_Wrapper File_Manager::parse(QString fileName)
                 case 1:
                 {
                     auto chunks = line.split(';');
-                    wrapper.tableName = chunks[0];
+                    if (chunks.size() > 0)
+                        wrapper.tableName = chunks[0];
                     pos++;
                     break;
                 }

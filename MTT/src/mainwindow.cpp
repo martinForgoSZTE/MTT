@@ -244,7 +244,7 @@ void MainWindow::onSwitchToMap()
 
 void MainWindow::onSwitchToTable()
 {
-    if(m_pEditor)
+    if(m_pEditor->getCurrentPureTableName() != "")
         m_pStackWidget->setCurrentWidget(m_pEditor);
     else
         QMessageBox::warning(this, tr("DB Warning"), tr("Data isn't loaded yet!"));

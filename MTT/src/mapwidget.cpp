@@ -36,4 +36,6 @@ void MapWidget::AddItemsToScene(const QVector<Coordinate>& coords)
         connect(circleItem, &CircleGraphicsItem::clickedOntoMapPoint, this, &MapWidget::clickedOntoMapPoint);
         m_pScene->addItem(circleItem);
     }
+    QGraphicsTextItem* text = m_pScene->addText("Select the desired data points by clicking on them");
+    text->setPos(m_pScene->sceneRect().center().x(), m_pScene->sceneRect().bottom() - 60);
 }
